@@ -177,6 +177,14 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 		case <-hup:
 			verbosef("Received SIGHUP, reloading configuration...")
+			deck, err = LoadDeck(dev, "", deck.File)
+			if err != nil {
+				return err
+			}
+			deck.updateWidgets()
+
+		case <-hup:
+			verbosef("Received SIGHUP, reloading configuration...")
 
 			nd, err := LoadDeck(dev, ".", deck.File)
 			if err != nil {
