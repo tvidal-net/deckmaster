@@ -58,7 +58,7 @@ type DeckConfig struct {
 	Keys       Keys   `toml:"keys"`
 }
 
-// MergeDeckConfig merges key configuration from multiple configs.
+// MergeDeckConfig merges key configuration from multiple configs
 func MergeDeckConfig(base, parent *DeckConfig) DeckConfig {
 	merged := make(map[byte]KeyConfig)
 	for _, config := range parent.Keys {
@@ -80,8 +80,7 @@ func MergeDeckConfig(base, parent *DeckConfig) DeckConfig {
 	return DeckConfig{background, base.Parent, keys}
 }
 
-// LoadConfigFromFile loads a DeckConfig from a file while checking for circular
-// dependencies.
+// LoadConfigFromFile loads a DeckConfig from a file while checking for circular dependencies
 func LoadConfigFromFile(base, path string, files []string) (DeckConfig, error) {
 	config := DeckConfig{}
 
@@ -109,11 +108,9 @@ func LoadConfigFromFile(base, path string, files []string) (DeckConfig, error) {
 		if err != nil {
 			return parent, err
 		}
-
 		merged := MergeDeckConfig(&config, &parent)
 		return merged, err
 	}
-
 	return config, err
 }
 
@@ -121,8 +118,8 @@ func LoadConfigFromFile(base, path string, files []string) (DeckConfig, error) {
 func LoadConfig(path string) (DeckConfig, error) {
 	base := filepath.Dir(path)
 	filename := filepath.Base(path)
-
-	return LoadConfigFromFile(base, filename, []string{})
+	var files []string
+	return LoadConfigFromFile(base, filename, files)
 }
 
 // Save writes config as json to filename.
