@@ -30,6 +30,10 @@ type Widget interface {
 	TriggerAction(hold bool)
 }
 
+type WidgetMonitor interface {
+	Refresh(name string)
+}
+
 // BaseWidget provides common functionality required by all widgets.
 type BaseWidget struct {
 	base       string

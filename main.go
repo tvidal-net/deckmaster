@@ -55,6 +55,10 @@ func fatalf(format string, a ...interface{}) {
 	go func() { shutdown <- fmt.Errorf(format, a...) }()
 }
 
+func errorf(e error) {
+	fmt.Fprintf(os.Stderr, "ERROR: %g\n", e)
+}
+
 func verbosef(format string, a ...interface{}) {
 	if !*verbose {
 		return
@@ -89,6 +93,17 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 	var keyStates sync.Map
 	keyTimestamps := make(map[uint8]time.Time)
+
+	cnn, err := NewDBusMonitorConnection("dev.go.DeckMaster.Monitor")
+	if err != nil {
+		return err
+	}
+	defer cnn.Close()
+
+	go BecomeDBusMonitor(cnn, "interface=org.kde.KMix.Mixer")
+	dbusMonitor := make(chan *dbus.Signal, 128)
+	cnn.Signal(dbusMonitor)
+	defer cnn.RemoveSignal(dbusMonitor)
 
 	kch, err := dev.ReadKeys()
 	if err != nil {
@@ -134,6 +149,15 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				}()
 			}
 			keyTimestamps[k.Index] = time.Now()
+
+		case sig := <-dbusMonitor:
+			for _, w := range deck.Widgets {
+				t, ok := w.(WidgetMonitor)
+				if !ok {
+					continue
+				}
+				t.Refresh(sig.Name)
+			}
 
 		case e := <-tch:
 			switch event := e.(type) {

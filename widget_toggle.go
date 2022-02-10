@@ -11,12 +11,15 @@ type ToggleWidget struct {
 	disabled image.Image
 	state    string
 	active   bool
+
+	monitor string
 }
 
 func NewToggleWidget(bw *BaseWidget, opts WidgetConfig) (*ToggleWidget, error) {
-	var disabled, state string
+	var disabled, state, monitor string
 	_ = ConfigValue(opts.Config["disabled"], &disabled)
 	_ = ConfigValue(opts.Config["state"], &state)
+	_ = ConfigValue(opts.Config["monitor"], &monitor)
 
 	button, err := NewButtonWidget(bw, opts)
 	if err != nil {
@@ -24,7 +27,9 @@ func NewToggleWidget(bw *BaseWidget, opts WidgetConfig) (*ToggleWidget, error) {
 	}
 	w := &ToggleWidget{
 		ButtonWidget: button,
-		state:        state,
+
+		state:   state,
+		monitor: monitor,
 	}
 	if err := w.LoadImage(&w.disabled, disabled); err != nil {
 		return nil, err
@@ -46,9 +51,8 @@ func (w *ToggleWidget) Update() error {
 	return w.RenderButton(w.Icon())
 }
 
-// TriggerAction default action is to toggle the button image
-func (w *ToggleWidget) TriggerAction(hold bool) {
-	if w.state != "" {
+func (w *ToggleWidget) Refresh(name string) {
+	if name != "" && w.monitor == name {
 		go UpdateButtonState(w)
 	}
 }
