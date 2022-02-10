@@ -211,6 +211,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		if w.Key() != index {
 			continue
 		}
+		w.TriggerAction(hold)
 
 		var a *ActionConfig
 		if hold {
@@ -220,7 +221,6 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		}
 
 		if a == nil {
-			w.TriggerAction(hold)
 			continue
 		}
 
