@@ -11,6 +11,7 @@ type ButtonWidget struct {
 	*BaseWidget
 
 	icon     image.Image
+	disabled image.Image
 	label    string
 	fontsize float64
 	color    color.Color
@@ -21,8 +22,9 @@ type ButtonWidget struct {
 func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	bw.setInterval(time.Duration(opts.Interval)*time.Millisecond, 0)
 
-	var icon, label string
+	var icon, disabled, label string
 	_ = ConfigValue(opts.Config["icon"], &icon)
+	_ = ConfigValue(opts.Config["disabled"], &disabled)
 	_ = ConfigValue(opts.Config["label"], &label)
 	var fontsize float64
 	_ = ConfigValue(opts.Config["fontsize"], &fontsize)
@@ -42,17 +44,20 @@ func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 		color:      color,
 		flatten:    flatten,
 	}
-	if icon != "" {
-		if err := w.LoadImage(icon); err != nil {
-			return nil, err
-		}
+	if err := w.LoadImage(&w.icon, icon); err != nil {
+		return nil, err
 	}
-
+	if err := w.LoadImage(&w.disabled, disabled); err != nil {
+		return nil, err
+	}
 	return w, nil
 }
 
-// LoadImage loads an image from disk.
-func (w *ButtonWidget) LoadImage(path string) error {
+func (w *ButtonWidget) LoadImage(property *image.Image, path string) error {
+	if path == "" {
+		return nil
+	}
+
 	path, err := expandPath(w.base, path)
 	if err != nil {
 		return err
@@ -62,7 +67,11 @@ func (w *ButtonWidget) LoadImage(path string) error {
 		return err
 	}
 
-	w.SetImage(icon)
+	if w.flatten {
+		*property = flattenImage(icon, w.color)
+	} else {
+		*property = icon
+	}
 	return nil
 }
 
@@ -119,4 +128,13 @@ func (w *ButtonWidget) Update() error {
 	}
 
 	return w.render(w.dev, img)
+}
+
+// TriggerAction default action is to toggle the button image
+func (w *ButtonWidget) TriggerAction(hold bool) {
+	verbosef("toggle key for button %d", w.key)
+	if w.disabled != nil {
+		w.icon, w.disabled = w.disabled, w.icon
+	}
+	w.Update()
 }
