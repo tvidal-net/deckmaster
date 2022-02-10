@@ -221,7 +221,6 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		if a == nil {
 			continue
 		}
-
 		if a.Deck != "" {
 			d, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
 			if err != nil {

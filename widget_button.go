@@ -11,23 +11,18 @@ type ButtonWidget struct {
 	*BaseWidget
 
 	icon     image.Image
-	disabled image.Image
-	state    string
 	label    string
 	fontsize float64
 	color    color.Color
 	flatten  bool
-	active   bool
 }
 
 // NewButtonWidget returns a new ButtonWidget.
 func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	bw.setInterval(time.Duration(opts.Interval)*time.Millisecond, 0)
 
-	var icon, disabled, state, label string
+	var icon, label string
 	_ = ConfigValue(opts.Config["icon"], &icon)
-	_ = ConfigValue(opts.Config["disabled"], &disabled)
-	_ = ConfigValue(opts.Config["state"], &state)
 	_ = ConfigValue(opts.Config["label"], &label)
 	var fontsize float64
 	_ = ConfigValue(opts.Config["fontsize"], &fontsize)
@@ -43,7 +38,6 @@ func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	w := &ButtonWidget{
 		BaseWidget: bw,
 		label:      label,
-		state:      state,
 		fontsize:   fontsize,
 		color:      color,
 		flatten:    flatten,
@@ -51,10 +45,6 @@ func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	if err := w.LoadImage(&w.icon, icon); err != nil {
 		return nil, err
 	}
-	if err := w.LoadImage(&w.disabled, disabled); err != nil {
-		return nil, err
-	}
-	w.active = w.CheckButtonState()
 	return w, nil
 }
 
@@ -88,19 +78,12 @@ func (w *ButtonWidget) SetImage(img image.Image) {
 	}
 }
 
-// Update renders the widget.
-func (w *ButtonWidget) Update() error {
+func (w *ButtonWidget) RenderButton(icon image.Image) error {
 	size := int(w.dev.Pixels)
 	margin := size / 18
 	height := size - (margin * 2)
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
 
-	var icon image.Image
-	if w.active || w.disabled == nil {
-		icon = w.icon
-	} else {
-		icon = w.disabled
-	}
 	if w.label != "" {
 		iconsize := int((float64(height) / 3.0) * 2.0)
 		bounds := img.Bounds()
@@ -141,27 +124,7 @@ func (w *ButtonWidget) Update() error {
 	return w.render(w.dev, img)
 }
 
-// TriggerAction default action is to toggle the button image
-func (w *ButtonWidget) TriggerAction(hold bool) {
-	if w.state != "" {
-		go UpdateButtonState(w)
-	}
-}
-
-func UpdateButtonState(w *ButtonWidget) {
-	if w.interval > 0 {
-		time.Sleep(w.interval)
-	}
-	if w.active != w.CheckButtonState() {
-		w.active = !w.active
-		w.Update()
-	}
-}
-
-func (w *ButtonWidget) CheckButtonState() bool {
-	if w.state != "" {
-		verbosef("checking for state of button %d with '%s'", w.key, w.state)
-		return executeCommand(w.state) == nil
-	}
-	return true
+// Update renders the widget.
+func (w *ButtonWidget) Update() error {
+	return w.RenderButton(w.icon)
 }

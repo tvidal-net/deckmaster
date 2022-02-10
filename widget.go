@@ -98,6 +98,9 @@ func NewWidget(dev *streamdeck.Device, base string, kc KeyConfig, bg image.Image
 	case "button":
 		return NewButtonWidget(bw, kc.Widget)
 
+	case "toggle":
+		return NewToggleWidget(bw, kc.Widget)
+
 	case "clock":
 		kc.Widget.Config = make(map[string]interface{})
 		kc.Widget.Config["format"] = "%H;%i;%s"
