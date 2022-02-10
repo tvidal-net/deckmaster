@@ -183,7 +183,7 @@ func executeDBusMethod(object, path, method, args string) {
 }
 
 // executes a command.
-func executeCommand(cmd string) {
+func executeCommand(cmd string) error {
 	exp, err := expandPath("", cmd)
 	if err == nil {
 		cmd = exp
@@ -198,11 +198,9 @@ func executeCommand(cmd string) {
 
 	if err := c.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "Command failed: %s\n", err)
-		return
+		return err
 	}
-	if err := c.Wait(); err != nil {
-		fmt.Fprintf(os.Stderr, "Command failed: %s\n", err)
-	}
+	return c.Wait()
 }
 
 // triggerAction triggers an action.

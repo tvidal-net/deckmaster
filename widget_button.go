@@ -12,19 +12,22 @@ type ButtonWidget struct {
 
 	icon     image.Image
 	disabled image.Image
+	state    string
 	label    string
 	fontsize float64
 	color    color.Color
 	flatten  bool
+	active   bool
 }
 
 // NewButtonWidget returns a new ButtonWidget.
 func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	bw.setInterval(time.Duration(opts.Interval)*time.Millisecond, 0)
 
-	var icon, disabled, label string
+	var icon, disabled, state, label string
 	_ = ConfigValue(opts.Config["icon"], &icon)
 	_ = ConfigValue(opts.Config["disabled"], &disabled)
+	_ = ConfigValue(opts.Config["state"], &state)
 	_ = ConfigValue(opts.Config["label"], &label)
 	var fontsize float64
 	_ = ConfigValue(opts.Config["fontsize"], &fontsize)
@@ -40,6 +43,7 @@ func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	w := &ButtonWidget{
 		BaseWidget: bw,
 		label:      label,
+		state:      state,
 		fontsize:   fontsize,
 		color:      color,
 		flatten:    flatten,
@@ -50,6 +54,7 @@ func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	if err := w.LoadImage(&w.disabled, disabled); err != nil {
 		return nil, err
 	}
+	w.active = w.CheckButtonState()
 	return w, nil
 }
 
@@ -90,13 +95,19 @@ func (w *ButtonWidget) Update() error {
 	height := size - (margin * 2)
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
 
+	var icon image.Image
+	if w.active || w.disabled == nil {
+		icon = w.icon
+	} else {
+		icon = w.disabled
+	}
 	if w.label != "" {
 		iconsize := int((float64(height) / 3.0) * 2.0)
 		bounds := img.Bounds()
 
-		if w.icon != nil {
+		if icon != nil {
 			err := drawImage(img,
-				w.icon,
+				icon,
 				iconsize,
 				image.Pt(-1, margin))
 
@@ -116,9 +127,9 @@ func (w *ButtonWidget) Update() error {
 			w.fontsize,
 			w.color,
 			image.Pt(-1, -1))
-	} else if w.icon != nil {
+	} else if icon != nil {
 		err := drawImage(img,
-			w.icon,
+			icon,
 			height,
 			image.Pt(-1, -1))
 
@@ -132,9 +143,25 @@ func (w *ButtonWidget) Update() error {
 
 // TriggerAction default action is to toggle the button image
 func (w *ButtonWidget) TriggerAction(hold bool) {
-	verbosef("toggle key for button %d", w.key)
-	if w.disabled != nil {
-		w.icon, w.disabled = w.disabled, w.icon
+	if w.state != "" {
+		go UpdateButtonState(w)
 	}
-	w.Update()
+}
+
+func UpdateButtonState(w *ButtonWidget) {
+	if w.interval > 0 {
+		time.Sleep(w.interval)
+	}
+	if w.active != w.CheckButtonState() {
+		w.active = !w.active
+		w.Update()
+	}
+}
+
+func (w *ButtonWidget) CheckButtonState() bool {
+	if w.state != "" {
+		verbosef("checking for state of button %d with '%s'", w.key, w.state)
+		return executeCommand(w.state) == nil
+	}
+	return true
 }
