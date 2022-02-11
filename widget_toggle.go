@@ -13,6 +13,8 @@ type ToggleWidget struct {
 	active   bool
 
 	monitor string
+
+	lastUpdate time.Time
 }
 
 func NewToggleWidget(bw *BaseWidget, opts WidgetConfig) (*ToggleWidget, error) {
@@ -52,7 +54,9 @@ func (w *ToggleWidget) Update() error {
 }
 
 func (w *ToggleWidget) Refresh(name string) {
-	if name != "" && w.monitor == name {
+	now := time.Now()
+	if name != "" && w.monitor == name && now.After(w.lastUpdate.Add(w.interval)) {
+		w.lastUpdate = now
 		go UpdateButtonState(w)
 	}
 }
