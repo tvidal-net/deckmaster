@@ -43,7 +43,7 @@ func (w *RecentWindowWidget) RequiresUpdate() bool {
 		return w.lastID != recentWindows[w.window].ID
 	}
 
-	return w.BaseWidget.RequiresUpdate()
+	return w.lastID != 0
 }
 
 // Update renders the widget.
@@ -68,6 +68,8 @@ func (w *RecentWindowWidget) Update() error {
 		w.label = name
 		w.SetImage(recentWindows[w.window].Icon)
 		return w.ButtonWidget.Update()
+	} else {
+		w.lastID = 0
 	}
 
 	return w.render(w.dev, img)
