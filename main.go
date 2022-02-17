@@ -100,7 +100,10 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	}
 	defer cnn.Close()
 
-	go BecomeDBusMonitor(cnn, "interface=org.kde.KMix.Mixer")
+	go BecomeDBusMonitor(cnn,
+		"interface=org.kde.KMix.Mixer",
+		"interface=org.kde.osdService",
+	)
 	dbusMonitor := make(chan *dbus.Signal, 128)
 	cnn.Signal(dbusMonitor)
 	defer cnn.RemoveSignal(dbusMonitor)
