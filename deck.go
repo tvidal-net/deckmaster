@@ -222,7 +222,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 			continue
 		}
 		if a.Deck != "" {
-			d, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
+			newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Can't load deck:", err)
 				return
@@ -232,7 +232,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 				return
 			}
 
-			deck = d
+			deck = newDeck
 			deck.updateWidgets()
 		}
 		if a.Keycode != "" {
