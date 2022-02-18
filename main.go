@@ -44,6 +44,7 @@ var (
 )
 
 const (
+	fadeDuration      = 250 * time.Millisecond
 	longPressDuration = 350 * time.Millisecond
 )
 
@@ -176,15 +177,16 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 		case <-hup:
 			verbosef("Received SIGHUP, reloading configuration...")
-			var newConfigDeck *Deck
-			newConfigDeck, err = LoadDeck(dev, "", deck.File)
+
+			nd, err := LoadDeck(dev, ".", deck.File)
 			if err != nil {
-				verbosef("Thew new configuration is not valid, keeping the current one.")
-				fmt.Printf("Configuration Error: %s\n", err)
-			} else {
-				deck = newConfigDeck
-				deck.updateWidgets()
+				verbosef("The new configuration is not valid, keeping the current one.")
+				fmt.Fprintf(os.Stderr, "Configuration Error: %s\n", err)
+				continue
 			}
+
+			deck = nd
+			deck.updateWidgets()
 
 		case <-sigs:
 			fmt.Println("Shutting down...")
@@ -251,6 +253,7 @@ func initDevice() (*streamdeck.Device, error) {
 		return &dev, err
 	}
 
+	dev.SetSleepFadeDuration(fadeDuration)
 	if len(*sleep) > 0 {
 		timeout, err := time.ParseDuration(*sleep)
 		if err != nil {

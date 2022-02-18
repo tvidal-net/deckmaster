@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/BurntSushi/toml v1.0.0
 	github.com/atotto/clipboard v0.1.4
-	github.com/bendahl/uinput v1.5.0
+	github.com/bendahl/uinput v1.5.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/flopp/go-findfont v0.1.0
 	github.com/godbus/dbus v4.1.0+incompatible
@@ -16,7 +16,7 @@ require (
 	github.com/jezek/xgbutil v0.0.0-20210302171758-530099784e66
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/muesli/streamdeck v0.2.3-0.20220205132636-dbbc8865ab8c
+	github.com/muesli/streamdeck v0.3.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible
