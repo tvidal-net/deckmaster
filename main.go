@@ -199,6 +199,9 @@ func closeDevice(dev *streamdeck.Device) {
 	if err := dev.Reset(); err != nil {
 		fmt.Fprintln(os.Stderr, "Unable to reset Stream Deck")
 	}
+	if err := dev.Clear(); err != nil {
+		fmt.Fprintln(os.Stderr, "Unable to clear the Stream Deck")
+	}
 	if err := dev.Close(); err != nil {
 		fmt.Fprintln(os.Stderr, "Unable to close Stream Deck")
 	}
