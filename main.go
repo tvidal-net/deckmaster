@@ -177,6 +177,18 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 		case <-hup:
 			verbosef("Received SIGHUP, reloading configuration...")
+			var newConfigDeck *Deck
+			newConfigDeck, err = LoadDeck(dev, "", deck.File)
+			if err != nil {
+				verbosef("Thew new configuration is not valid, keeping the current one.")
+				fmt.Printf("Configuration Error: %s\n", err)
+			} else {
+				deck = newConfigDeck
+				deck.updateWidgets()
+			}
+
+		case <-hup:
+			verbosef("Received SIGHUP, reloading configuration...")
 
 			nd, err := LoadDeck(dev, ".", deck.File)
 			if err != nil {
