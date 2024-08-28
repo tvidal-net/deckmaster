@@ -13,6 +13,8 @@ import (
 	"github.com/golang/freetype/truetype"
 	"github.com/muesli/streamdeck"
 	"github.com/nfnt/resize"
+
+	_ "image/png"
 )
 
 var (
@@ -169,6 +171,7 @@ func loadImage(path string) (image.Image, error) {
 	}
 	defer f.Close() //nolint:errcheck
 
+	fmt.Fprintf(os.Stderr, "decoding %s\n", path)
 	icon, _, err := image.Decode(f)
 	return icon, err
 }

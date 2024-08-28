@@ -9,8 +9,6 @@ require (
 	github.com/flopp/go-findfont v0.1.0
 	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/jezek/xgb v1.1.1
-	github.com/jezek/xgbutil v0.0.0-20240804174445-e2e9464b6e01
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/streamdeck v0.4.0
@@ -20,12 +18,8 @@ require (
 )
 
 require (
-	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
-	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/karalabe/hid v1.0.1-0.20190806082151-9c14560f9ee8 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
