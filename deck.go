@@ -104,7 +104,7 @@ func (d *Deck) loadBackground(dev *streamdeck.Device, bg string) error {
 }
 
 // returns the background image for an individual key.
-func (d Deck) backgroundForKey(dev *streamdeck.Device, key uint8) image.Image {
+func (d *Deck) backgroundForKey(dev *streamdeck.Device, key uint8) image.Image {
 	padding := int(dev.Padding)
 	pixels := int(dev.Pixels)
 	bg := image.NewRGBA(image.Rect(0, 0, pixels, pixels))
