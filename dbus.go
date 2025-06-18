@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/v5"
 )
 
 func NewDBusMonitorConnection(name string) (*dbus.Conn, error) {
