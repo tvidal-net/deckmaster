@@ -32,6 +32,9 @@ var (
 	keyboard uinput.Keyboard
 	shutdown = make(chan error)
 
+	xorg          *Xorg
+	recentWindows []Window
+
 	deckFile   = flag.String("deck", "main.deck", "path to deck config file")
 	device     = flag.String("device", "", "which device to use (serial number)")
 	brightness = flag.Uint("brightness", 80, "brightness in percent")
@@ -82,7 +85,7 @@ func expandPath(base, path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-func eventLoop(dev *streamdeck.Device) error {
+func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -91,6 +94,20 @@ func eventLoop(dev *streamdeck.Device) error {
 
 	var keyStates sync.Map
 	keyTimestamps := make(map[uint8]time.Time)
+
+	cnn, err := NewDBusMonitorConnection("dev.go.DeckMaster.Monitor")
+	if err != nil {
+		return err
+	}
+	defer cnn.Close()
+
+	go BecomeDBusMonitor(cnn,
+		"interface=org.kde.KMix.Mixer",
+		"interface=org.kde.osdService",
+	)
+	dbusMonitor := make(chan *dbus.Signal, 128)
+	cnn.Signal(dbusMonitor)
+	defer cnn.RemoveSignal(dbusMonitor)
 
 	kch, err := dev.ReadKeys()
 	if err != nil {
@@ -136,6 +153,24 @@ func eventLoop(dev *streamdeck.Device) error {
 				}()
 			}
 			keyTimestamps[k.Index] = time.Now()
+
+		case sig := <-dbusMonitor:
+			for _, w := range deck.Widgets {
+				t, ok := w.(WidgetMonitor)
+				if !ok {
+					continue
+				}
+				t.Refresh(sig.Name)
+			}
+
+		case e := <-tch:
+			switch event := e.(type) {
+			case WindowClosedEvent:
+				handleWindowClosed(event)
+
+			case ActiveWindowChangedEvent:
+				handleActiveWindowChanged(dev, event)
+			}
 
 		case err := <-shutdown:
 			return err
@@ -265,6 +300,17 @@ func run() error {
 		return fmt.Errorf("Unable to connect to dbus: %s", err)
 	}
 
+	// initialize xorg connection and track window focus
+	tch := make(chan interface{})
+	xorg, err = Connect(os.Getenv("DISPLAY"))
+	if err == nil {
+		defer xorg.Close()
+		xorg.TrackWindows(tch, time.Second)
+	} else {
+		fmt.Fprintf(os.Stderr, "Could not connect to X server: %s\n", err)
+		fmt.Fprintln(os.Stderr, "Tracking window manager will be disabled!")
+	}
+
 	// initialize virtual keyboard
 	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
 	if err != nil {
@@ -281,7 +327,7 @@ func run() error {
 	}
 	deck.updateWidgets()
 
-	return eventLoop(dev)
+	return eventLoop(dev, tch)
 }
 
 func main() {
