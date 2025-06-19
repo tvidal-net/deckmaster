@@ -44,8 +44,10 @@ var (
 )
 
 const (
-	fadeDuration      = 250 * time.Millisecond
-	longPressDuration = 350 * time.Millisecond
+	KMixerInterfaceRule  = "interface=org.kde.KMix.Mixer"
+	ControlChangedSignal = "controlChanged"
+	fadeDuration         = 250 * time.Millisecond
+	longPressDuration    = 350 * time.Millisecond
 )
 
 func fatal(v ...interface{}) {
@@ -95,19 +97,12 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	var keyStates sync.Map
 	keyTimestamps := make(map[uint8]time.Time)
 
-	cnn, err := NewDBusMonitorConnection("dev.go.DeckMaster.Monitor")
+	monitor, err := NewDBusMonitor(KMixerInterfaceRule)
 	if err != nil {
 		return err
 	}
-	defer cnn.Close()
-
-	go BecomeDBusMonitor(cnn,
-		"interface=org.kde.KMix.Mixer",
-		"interface=org.kde.osdService",
-	)
-	dbusMonitor := make(chan *dbus.Signal, 128)
-	cnn.Signal(dbusMonitor)
-	defer cnn.RemoveSignal(dbusMonitor)
+	go monitor.Start()
+	defer monitor.Close()
 
 	kch, err := dev.ReadKeys()
 	if err != nil {
@@ -154,13 +149,13 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			}
 			keyTimestamps[k.Index] = time.Now()
 
-		case sig := <-dbusMonitor:
+		case signal := <-monitor.Channel():
 			for _, w := range deck.Widgets {
 				t, ok := w.(WidgetMonitor)
 				if !ok {
 					continue
 				}
-				t.Refresh(sig.Name)
+				t.Refresh(signal.Name)
 			}
 
 		case e := <-tch:
@@ -186,19 +181,6 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				deck = newConfigDeck
 				deck.updateWidgets()
 			}
-
-		case <-hup:
-			verbosef("Received SIGHUP, reloading configuration...")
-
-			nd, err := LoadDeck(dev, ".", deck.File)
-			if err != nil {
-				verbosef("The new configuration is not valid, keeping the current one.")
-				fmt.Fprintf(os.Stderr, "Configuration Error: %s\n", err)
-				continue
-			}
-
-			deck = nd
-			deck.updateWidgets()
 
 		case <-sigs:
 			fmt.Println("Shutting down...")
