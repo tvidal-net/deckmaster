@@ -30,10 +30,6 @@ type Widget interface {
 	TriggerAction(hold bool)
 }
 
-type WidgetMonitor interface {
-	Refresh(name string)
-}
-
 // BaseWidget provides common functionality required by all widgets.
 type BaseWidget struct {
 	base       string
@@ -101,9 +97,6 @@ func NewWidget(dev *streamdeck.Device, base string, kc KeyConfig, bg image.Image
 	switch kc.Widget.ID {
 	case "button":
 		return NewButtonWidget(bw, kc.Widget)
-
-	case "toggle":
-		return NewToggleWidget(bw, kc.Widget)
 
 	case "clock":
 		kc.Widget.Config = make(map[string]interface{})

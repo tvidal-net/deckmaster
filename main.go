@@ -146,16 +146,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				}()
 			}
 			keyTimestamps[k.Index] = time.Now()
-
-		case signal := <-monitor.Channel():
-			for _, w := range deck.Widgets {
-				t, ok := w.(WidgetMonitor)
-				if !ok {
-					continue
-				}
-				t.Refresh(signal.Name)
-			}
-
+			
 		case e := <-tch:
 			switch event := e.(type) {
 			case WindowClosedEvent:
