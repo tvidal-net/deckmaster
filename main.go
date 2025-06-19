@@ -44,10 +44,8 @@ var (
 )
 
 const (
-	KMixerInterfaceRule  = "interface=org.kde.KMix.Mixer"
-	ControlChangedSignal = "controlChanged"
-	fadeDuration         = 250 * time.Millisecond
-	longPressDuration    = 350 * time.Millisecond
+	fadeDuration      = 250 * time.Millisecond
+	longPressDuration = 350 * time.Millisecond
 )
 
 func fatal(v ...interface{}) {

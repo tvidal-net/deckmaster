@@ -22,7 +22,7 @@ type DBusMonitor interface {
 	Channel() chan *dbus.Signal
 }
 
-func newDBusMonitorConnection() (*dbus.Conn, error) {
+func newDBusConnection() (*dbus.Conn, error) {
 	cnn, err := dbus.SessionBusPrivate()
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func newDBusMonitorConnection() (*dbus.Conn, error) {
 
 func NewDBusMonitor(rules ...string) (DBusMonitor, error) {
 	if dbusConnection == nil {
-		cnn, err := newDBusMonitorConnection()
+		cnn, err := newDBusConnection()
 		if err != nil {
 			panic(err)
 		}
