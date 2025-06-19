@@ -102,6 +102,14 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	go monitor.Start()
 	defer monitor.Close()
 
+	var monitorWidgets []WidgetMonitor
+	for _, widget := range deck.Widgets {
+		monitorWidget, success := widget.(WidgetMonitor)
+		if success {
+			monitorWidgets = append(monitorWidgets, monitorWidget)
+		}
+	}
+
 	kch, err := dev.ReadKeys()
 	if err != nil {
 		return err
@@ -146,7 +154,12 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				}()
 			}
 			keyTimestamps[k.Index] = time.Now()
-			
+
+		case signal := <-monitor.Channel():
+			for _, w := range monitorWidgets {
+				w.Signal(signal)
+			}
+
 		case e := <-tch:
 			switch event := e.(type) {
 			case WindowClosedEvent:

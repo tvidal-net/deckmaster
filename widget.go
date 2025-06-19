@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/godbus/dbus/v5"
 	"image"
 	"image/color"
 	"image/draw"
@@ -40,6 +41,10 @@ type BaseWidget struct {
 	background image.Image
 	lastUpdate time.Time
 	interval   time.Duration
+}
+
+type WidgetMonitor interface {
+	Signal(signal *dbus.Signal)
 }
 
 // Key returns the key a widget is mapped to.
@@ -97,6 +102,9 @@ func NewWidget(dev *streamdeck.Device, base string, kc KeyConfig, bg image.Image
 	switch kc.Widget.ID {
 	case "button":
 		return NewButtonWidget(bw, kc.Widget)
+
+	case "mute":
+		return NewMuteWidget(bw, kc.Widget)
 
 	case "clock":
 		kc.Widget.Config = make(map[string]interface{})
@@ -216,7 +224,7 @@ func drawString(img *image.RGBA, bounds image.Rectangle, ttf *truetype.Font, tex
 	c := ftContext(img, ttf, dpi, fontsize)
 
 	if fontsize <= 0 {
-		// pick biggest available height to fit the string
+		// pick the biggest available height to fit the string
 		fontsize, _ = maxPointSize(text,
 			ftContext(img, ttf, dpi, fontsize), dpi,
 			bounds.Dx(), bounds.Dy())

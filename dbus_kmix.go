@@ -122,7 +122,7 @@ func (o *KMixerObject) GetMasterDevice() (KMixerDevice, error) {
 	if err != nil {
 		return nil, err
 	}
-	path := dbus.ObjectPath(val.String())
+	path := dbus.ObjectPath(val.Value().(string))
 	return o.connection.Object(path), nil
 }
 
