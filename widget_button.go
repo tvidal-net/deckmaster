@@ -48,6 +48,7 @@ func NewButtonWidget(bw *BaseWidget, opts WidgetConfig) (*ButtonWidget, error) {
 	return w, nil
 }
 
+// LoadImage loads an image from disk.
 func (w *ButtonWidget) LoadImage(property *image.Image, path string) error {
 	if path == "" {
 		return nil
@@ -78,6 +79,7 @@ func (w *ButtonWidget) SetImage(img image.Image) {
 	}
 }
 
+// RenderButton draws the image to the device button
 func (w *ButtonWidget) RenderButton(icon image.Image) error {
 	size := int(w.dev.Pixels)
 	margin := size / 18
