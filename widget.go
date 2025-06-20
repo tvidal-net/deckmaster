@@ -98,6 +98,9 @@ func NewWidget(dev *streamdeck.Device, base string, kc KeyConfig, bg image.Image
 	case "button":
 		return NewButtonWidget(bw, kc.Widget)
 
+	case "audio":
+		return NewAudioWidget(bw, kc.Widget)
+
 	case "mute":
 		return NewMuteWidget(bw, kc.Widget)
 

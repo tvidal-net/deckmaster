@@ -58,7 +58,9 @@ func fatalf(format string, a ...interface{}) {
 }
 
 func errorf(e error) {
-	fmt.Fprintf(os.Stderr, "ERROR: %g\n", e)
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n\n", e.Error())
+	}
 }
 
 func verbosef(format string, a ...interface{}) {
@@ -96,11 +98,17 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	var keyStates sync.Map
 	keyTimestamps := make(map[uint8]time.Time)
 
+	var audioWidgets []AudioChangedMonitor
 	var muteWidgets []MuteChangedMonitor
 	for _, widget := range deck.Widgets {
 		muteWidget, success := widget.(MuteChangedMonitor)
 		if success {
 			muteWidgets = append(muteWidgets, muteWidget)
+		}
+
+		audioWidget, success := widget.(AudioChangedMonitor)
+		if success {
+			audioWidgets = append(audioWidgets, audioWidget)
 		}
 	}
 	go pa.Start()
@@ -150,12 +158,17 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			}
 			keyTimestamps[k.Index] = time.Now()
 
-		case pulseAudioChangeType := <-pa.Updates():
-			switch pulseAudioChangeType {
+		case changeType := <-pa.Updates():
+			switch changeType {
 			case SinkMuteChanged, SourceMuteChanged:
-				playback := pulseAudioChangeType == SinkMuteChanged
+				playback := changeType == SinkMuteChanged
 				for _, w := range muteWidgets {
 					w.MuteChanged(playback)
+				}
+
+			case SinkChanged, SourceChanged:
+				for _, w := range audioWidgets {
+					w.AudioChanged(changeType)
 				}
 			}
 

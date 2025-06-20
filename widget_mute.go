@@ -22,13 +22,15 @@ type MuteChangedMonitor interface {
 }
 
 func NewMuteWidget(bw *BaseWidget, opts WidgetConfig) (*MuteWidget, error) {
-	var muted, stream string
-	_ = ConfigValue(opts.Config[MutedConfig], &muted)
-	_ = ConfigValue(opts.Config[StreamConfig], &stream)
 	button, err := NewButtonWidget(bw, opts)
 	if err != nil {
 		return nil, err
 	}
+
+	var muted, stream string
+	_ = ConfigValue(opts.Config[MutedConfig], &muted)
+	_ = ConfigValue(opts.Config[StreamConfig], &stream)
+
 	isPlayback := stream != MicStreamConfig
 	w := &MuteWidget{
 		ButtonWidget: button,
