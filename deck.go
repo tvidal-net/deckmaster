@@ -151,7 +151,7 @@ func emulateKeyPress(keys string) {
 		k = formatKeycodes(strings.TrimSpace(k))
 		kc, err := strconv.Atoi(k)
 		if err != nil {
-			errorLogF("%s is not a valid keycode: %s", k, err)
+			errorLogF("%s is not a valid keycode: %s", k, err.Error())
 		}
 
 		if i+1 < len(kk) {
@@ -167,7 +167,7 @@ func emulateKeyPress(keys string) {
 func emulateClipboard(text string) {
 	err := clipboard.WriteAll(text)
 	if err != nil {
-		errorLogF("Pasting to clipboard failed: %s", err)
+		errorLogF("Pasting to clipboard failed: %s", err.Error())
 	}
 
 	// paste the string
@@ -178,7 +178,7 @@ func emulateClipboard(text string) {
 func executeDBusMethod(object, path, method, args string) {
 	call := dbusConn.Object(object, dbus.ObjectPath(path)).Call(method, 0, args)
 	if call.Err != nil {
-		errorLogF("dbus call failed: %s", call.Err)
+		errorLogF("dbus call failed: %s", call.Err.Error())
 	}
 }
 
@@ -197,7 +197,7 @@ func executeCommand(cmd string) error {
 	}
 
 	if err := c.Start(); err != nil {
-		errorLogF("Command failed: %s", err)
+		errorLogF("Command failed: %s", err.Error())
 		return err
 	}
 	return c.Wait()
@@ -224,7 +224,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		if a.Deck != "" {
 			newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
 			if err != nil {
-				errorLogF("Can't load deck:", err)
+				errorLogF("Can't load deck: %s", err.Error())
 				return
 			}
 			if err := dev.Clear(); err != nil {
@@ -258,7 +258,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 				d.adjustBrightness(dev, strings.TrimPrefix(a.Device, "brightness"))
 
 			default:
-				errorLogF("Unrecognized special action:", a.Device)
+				errorLogF("Unrecognized special action: %s", a.Device)
 			}
 		}
 	}

@@ -187,7 +187,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			nd, err := LoadDeck(dev, ".", deck.File)
 			if err != nil {
 				verboseLog("The new configuration is not valid, keeping the current one.")
-				errorLogF("Configuration Error: %s", err)
+				errorLogF("Configuration Error: %s", err.Error())
 				continue
 			}
 
@@ -301,14 +301,14 @@ func run() error {
 		defer xorg.Close()
 		xorg.TrackWindows(tch, time.Second)
 	} else {
-		errorLogF("Could not connect to X server: %s", err)
+		errorLogF("Could not connect to X server: %s", err.Error())
 		errorLogF("Tracking window manager will be disabled!")
 	}
 
 	// initialize virtual keyboard
 	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
 	if err != nil {
-		errorLogF("Could not create virtual input device (/dev/uinput): %s", err)
+		errorLogF("Could not create virtual input device (/dev/uinput): %s", err.Error())
 		errorLogF("Emulating keyboard events will be disabled!")
 	} else {
 		defer keyboard.Close() //nolint:errcheck

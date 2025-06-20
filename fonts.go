@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"io/ioutil"
@@ -88,19 +87,19 @@ func init() {
 	var err error
 	ttfFont, err = loadFont("Roboto-Regular.ttf")
 	if err != nil {
-		errorLogF("Error loading font:", err)
+		errorLogF("Error loading font: %s", err.Error())
 		os.Exit(1)
 	}
 
 	ttfThinFont, err = loadFont("Roboto-Thin.ttf")
 	if err != nil {
-		errorLogF("Error loading font:", err)
+		errorLogF("Error loading font: %s", err.Error())
 		os.Exit(1)
 	}
 
 	ttfBoldFont, err = loadFont("Roboto-Bold.ttf")
 	if err != nil {
-		errorLogF("Error loading font:", err)
+		errorLogF("Error loading font: %s", err.Error())
 		os.Exit(1)
 	}
 }

@@ -57,7 +57,7 @@ func (w *WeatherData) Condition() (string, error) {
 	defer w.responseMutex.RUnlock()
 
 	if strings.Contains(w.response, "Unknown location") {
-		errorLogF("unknown location:", w.location)
+		errorLogF("unknown location: %s", w.location)
 		return "", nil
 	}
 
@@ -75,7 +75,7 @@ func (w *WeatherData) Temperature() (string, error) {
 	defer w.responseMutex.RUnlock()
 
 	if strings.Contains(w.response, "Unknown location") {
-		errorLogF("unknown location:", w.location)
+		errorLogF("unknown location: %s", w.location)
 		return "", nil
 	}
 
@@ -118,14 +118,14 @@ func (w *WeatherData) Fetch() {
 
 	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
-		errorLogF("can't fetch weather data:", err)
+		errorLogF("can't fetch weather data: %s", err.Error())
 		return
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		errorLogF("can't read weather data:", err)
+		errorLogF("can't read weather data: %s", err.Error())
 		return
 	}
 
