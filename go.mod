@@ -26,6 +26,7 @@ require (
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/karalabe/hid v1.0.1-0.20190806082151-9c14560f9ee8 // indirect
+	github.com/lawl/pulseaudio v0.0.0-20220626105240-976bed5e247c // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
