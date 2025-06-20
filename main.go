@@ -50,7 +50,7 @@ const (
 
 func errorLog(e error) {
 	if e != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n", e.Error())
+		errorLogF("ERROR: %s\n", e.Error())
 	}
 }
 
@@ -203,16 +203,16 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 func closeDevice(dev *streamdeck.Device) {
 	if err := dev.Reset(); err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to reset Stream Deck")
+		errorLogF("Unable to reset Stream Deck")
 	}
 	if err := dev.Clear(); err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to clear the Stream Deck")
+		errorLogF("Unable to clear the Stream Deck")
 	}
 	if err := dev.Sleep(); err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to sleep the Stream Deck")
+		errorLogF("Unable to sleep the Stream Deck")
 	}
 	if err := dev.Close(); err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to close Stream Deck")
+		errorLogF("Unable to close Stream Deck")
 	}
 }
 
@@ -236,7 +236,7 @@ func initDevice() (*streamdeck.Device, error) {
 			}
 		}
 		if !found {
-			fmt.Fprintln(os.Stderr, "Can't find device. Available devices:")
+			errorLogF("Can't find device. Available devices:")
 			for _, v := range d {
 				errorLogF("Serial %s (%d buttons)", v.Serial, dev.Keys)
 			}
@@ -302,14 +302,14 @@ func run() error {
 		xorg.TrackWindows(tch, time.Second)
 	} else {
 		errorLogF("Could not connect to X server: %s", err)
-		fmt.Fprintln(os.Stderr, "Tracking window manager will be disabled!")
+		errorLogF("Tracking window manager will be disabled!")
 	}
 
 	// initialize virtual keyboard
 	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
 	if err != nil {
 		errorLogF("Could not create virtual input device (/dev/uinput): %s", err)
-		fmt.Fprintln(os.Stderr, "Emulating keyboard events will be disabled!")
+		errorLogF("Emulating keyboard events will be disabled!")
 	} else {
 		defer keyboard.Close() //nolint:errcheck
 	}
@@ -353,7 +353,7 @@ func main() {
 	}
 
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		errorLog(err)
 		os.Exit(1)
 	}
 }

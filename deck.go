@@ -142,7 +142,7 @@ func emulateKeyPresses(keys string) {
 // emulates a (multi-)key press.
 func emulateKeyPress(keys string) {
 	if keyboard == nil {
-		fmt.Fprintln(os.Stderr, "Keyboard emulation is disabled!")
+		errorLogF("Keyboard emulation is disabled!")
 		return
 	}
 
@@ -224,7 +224,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		if a.Deck != "" {
 			newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, "Can't load deck:", err)
+				errorLogF("Can't load deck:", err)
 				return
 			}
 			if err := dev.Clear(); err != nil {
@@ -258,7 +258,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 				d.adjustBrightness(dev, strings.TrimPrefix(a.Device, "brightness"))
 
 			default:
-				fmt.Fprintln(os.Stderr, "Unrecognized special action:", a.Device)
+				errorLogF("Unrecognized special action:", a.Device)
 			}
 		}
 	}
@@ -281,7 +281,7 @@ func (d *Deck) updateWidgets() {
 // adjustBrightness adjusts the brightness.
 func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 	if len(value) == 0 {
-		fmt.Fprintln(os.Stderr, "No brightness value specified")
+		errorLogF("No brightness value specified")
 		return
 	}
 

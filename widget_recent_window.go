@@ -76,7 +76,7 @@ func (w *RecentWindowWidget) Update() error {
 // TriggerAction gets called when a button is pressed.
 func (w *RecentWindowWidget) TriggerAction(hold bool) {
 	if xorg == nil {
-		fmt.Fprintln(os.Stderr, "xorg support is disabled!")
+		errorLogF("xorg support is disabled!")
 		return
 	}
 

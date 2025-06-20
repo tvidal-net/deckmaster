@@ -57,7 +57,7 @@ func (w *WeatherData) Condition() (string, error) {
 	defer w.responseMutex.RUnlock()
 
 	if strings.Contains(w.response, "Unknown location") {
-		fmt.Fprintln(os.Stderr, "unknown location:", w.location)
+		errorLogF("unknown location:", w.location)
 		return "", nil
 	}
 
@@ -75,7 +75,7 @@ func (w *WeatherData) Temperature() (string, error) {
 	defer w.responseMutex.RUnlock()
 
 	if strings.Contains(w.response, "Unknown location") {
-		fmt.Fprintln(os.Stderr, "unknown location:", w.location)
+		errorLogF("unknown location:", w.location)
 		return "", nil
 	}
 
@@ -118,14 +118,14 @@ func (w *WeatherData) Fetch() {
 
 	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "can't fetch weather data:", err)
+		errorLogF("can't fetch weather data:", err)
 		return
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "can't read weather data:", err)
+		errorLogF("can't read weather data:", err)
 		return
 	}
 
@@ -219,7 +219,7 @@ func (w *WeatherWidget) Update() error {
 		var err error
 		weatherIcon, err = loadThemeImage(w.theme, iconName)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "weather widget using fallback icons")
+			errorLogF("weather widget using fallback icons")
 			weatherIcon = weatherImage(imagePath)
 		}
 	} else {

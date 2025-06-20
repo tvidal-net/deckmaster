@@ -54,7 +54,7 @@ func (l *Layout) FormatLayout(frameReps []string, frameCount int) []image.Rectan
 
 		frame, err := formatFrame(frameReps[i])
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "using default frame:", err)
+			errorLogF("using default frame:", err)
 			frame = l.defaultFrame(frameCount, i)
 		}
 		l.frames = append(l.frames, frame)
