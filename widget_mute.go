@@ -18,7 +18,7 @@ type MuteWidget struct {
 }
 
 type MuteChangedMonitor interface {
-	MuteChanged(playback bool)
+	MuteChanged(isSinkStream bool)
 }
 
 func NewMuteWidget(bw *BaseWidget, opts WidgetConfig) (*MuteWidget, error) {
@@ -44,9 +44,9 @@ func NewMuteWidget(bw *BaseWidget, opts WidgetConfig) (*MuteWidget, error) {
 
 func (w *MuteWidget) Update() error {
 	if pa.Muted(w.playback) {
-		return w.RenderButton(w.muted)
+		return w.Draw(w.muted)
 	} else {
-		return w.RenderButton(w.icon)
+		return w.Draw(w.icon)
 	}
 }
 

@@ -32,7 +32,7 @@ func getSink(name string, client *pulseaudio.Client) (*pulseaudio.Sink, error) {
 			return &sink, nil
 		}
 	}
-	return nil, &pulseaudio.Error{Cmd: "default sink", Code: 3}
+	return nil, &pulseaudio.Error{Cmd: "getSink", Code: 3}
 }
 
 func getSource(name string, client *pulseaudio.Client) (*pulseaudio.Source, error) {
@@ -45,7 +45,7 @@ func getSource(name string, client *pulseaudio.Client) (*pulseaudio.Source, erro
 			return &source, nil
 		}
 	}
-	return nil, &pulseaudio.Error{Cmd: "default source", Code: 3}
+	return nil, &pulseaudio.Error{Cmd: "getSource", Code: 3}
 }
 
 func NewPulseAudio() (*PulseAudio, error) {
@@ -134,16 +134,16 @@ func (c *PulseAudio) Start() {
 	}
 }
 
-func (c *PulseAudio) Muted(playback bool) bool {
-	if playback {
+func (c *PulseAudio) Muted(isSinkStream bool) bool {
+	if isSinkStream {
 		return c.currentSink.Muted
 	} else {
 		return c.currentSource.Muted
 	}
 }
 
-func (c *PulseAudio) ToggleMute(playback bool) error {
-	if playback {
+func (c *PulseAudio) ToggleMute(isSinkStream bool) error {
+	if isSinkStream {
 		return c.client.SetSinkMute(!c.currentSink.Muted, c.CurrentSinkName())
 	} else {
 		return c.client.SetSourceMute(!c.currentSource.Muted, c.CurrentSourceName())

@@ -20,7 +20,7 @@ type AudioWidget struct {
 }
 
 type AudioChangedMonitor interface {
-	AudioChanged(changeType ChangeType)
+	AudioStreamChanged(changeType ChangeType)
 }
 
 func NewAudioWidget(bw *BaseWidget, opts WidgetConfig) (*AudioWidget, error) {
@@ -99,9 +99,9 @@ func (w *AudioWidget) SetSourceStream(alt bool) {
 
 func (w *AudioWidget) Update() error {
 	if w.IsMainStreamDefault() {
-		return w.RenderButton(w.icon)
+		return w.Draw(w.icon)
 	} else {
-		return w.RenderButton(w.alt)
+		return w.Draw(w.alt)
 	}
 }
 
@@ -111,7 +111,7 @@ func (w *AudioWidget) TriggerAction(hold bool) {
 	}
 }
 
-func (w *AudioWidget) AudioChanged(changeType ChangeType) {
+func (w *AudioWidget) AudioStreamChanged(changeType ChangeType) {
 	if changeType == SinkChanged {
 		verboseLog("SinkChanged")
 		w.SetSourceStream(!w.IsMainStreamDefault())

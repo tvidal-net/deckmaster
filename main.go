@@ -165,7 +165,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 			case SinkChanged, SourceChanged:
 				for _, w := range audioWidgets {
-					w.AudioChanged(changeType)
+					w.AudioStreamChanged(changeType)
 				}
 			}
 
@@ -320,6 +320,7 @@ func run() error {
 		return err
 	}
 	pa = newPulseAudio
+	defer pa.Close()
 
 	// load deck
 	deck, err = LoadDeck(dev, ".", *deckFileConfig)

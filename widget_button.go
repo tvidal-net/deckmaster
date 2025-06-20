@@ -79,28 +79,33 @@ func (w *ButtonWidget) SetImage(img image.Image) {
 	}
 }
 
-// RenderButton draws the image to the device button
-func (w *ButtonWidget) RenderButton(icon image.Image) error {
+// Update renders the widget.
+func (w *ButtonWidget) Update() error {
+	return w.Draw(w.icon)
+}
+
+// Draw draws the image to the device button
+func (w *ButtonWidget) Draw(icon image.Image) error {
 	size := int(w.dev.Pixels)
 	margin := size / 18
 	height := size - (margin * 2)
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
 
 	if w.label != "" {
-		iconsize := int((float64(height) / 3.0) * 2.0)
+		iconSize := int((float64(height) / 3.0) * 2.0)
 		bounds := img.Bounds()
 
 		if icon != nil {
 			err := drawImage(img,
 				icon,
-				iconsize,
+				iconSize,
 				image.Pt(-1, margin))
 
 			if err != nil {
 				return err
 			}
 
-			bounds.Min.Y += iconsize + margin
+			bounds.Min.Y += iconSize + margin
 			bounds.Max.Y -= margin
 		}
 
@@ -124,9 +129,4 @@ func (w *ButtonWidget) RenderButton(icon image.Image) error {
 	}
 
 	return w.render(w.dev, img)
-}
-
-// Update renders the widget.
-func (w *ButtonWidget) Update() error {
-	return w.RenderButton(w.icon)
 }
