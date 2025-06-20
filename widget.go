@@ -18,7 +18,7 @@ import (
 
 var (
 	// DefaultColor is the standard color for text rendering.
-	DefaultColor = color.RGBA{255, 255, 255, 255}
+	DefaultColor = color.White
 )
 
 // Widget is an interface implemented by all available widgets.

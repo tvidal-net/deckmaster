@@ -155,9 +155,11 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			}
 			keyTimestamps[k.Index] = time.Now()
 
-		case signal := <-monitor.Channel():
-			for _, w := range monitorWidgets {
-				w.Signal(signal)
+		case dbusSignal := <-monitor.Channel():
+			if dbusSignal != nil {
+				for _, w := range monitorWidgets {
+					w.Signal(dbusSignal)
+				}
 			}
 
 		case e := <-tch:
