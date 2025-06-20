@@ -5,9 +5,7 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"image"
-	"os"
 	"time"
 
 	"github.com/jezek/xgb"
@@ -162,7 +160,7 @@ func (x Xorg) CloseWindow(w Window) error {
 func (x Xorg) atom(aname string) *xproto.InternAtomReply {
 	a, err := xproto.InternAtom(x.conn, true, uint16(len(aname)), aname).Reply()
 	if err != nil {
-		fatal("atom:", err)
+		fatal(err)
 	}
 	return a
 }
@@ -199,7 +197,7 @@ func (x Xorg) name(w xproto.Window) (string, error) {
 func (x Xorg) icon(w xproto.Window) (image.Image, error) {
 	icon, err := xgraphics.FindIcon(x.util, w, 128, 128)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not find icon for window %d\n", w)
+		errorLog("Could not find icon for window %d", w)
 		return nil, err
 	}
 

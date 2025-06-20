@@ -106,13 +106,13 @@ func (c *PulseAudio) Start() {
 		_ = <-pulseAudioUpdates
 		serverInfo, err := c.client.ServerInfo()
 		if err != nil {
-			errorf(err)
+			printError(err)
 			continue
 		}
 
 		defaultSink, err := getSink(serverInfo.DefaultSink, &c.client)
 		if err != nil {
-			errorf(err)
+			printError(err)
 			continue
 		}
 		if defaultSink.Name != c.CurrentSinkName() {
@@ -126,7 +126,7 @@ func (c *PulseAudio) Start() {
 
 		defaultSource, err := getSource(serverInfo.DefaultSource, &c.client)
 		if err != nil {
-			errorf(err)
+			printError(err)
 			continue
 		}
 		if defaultSource.Name != c.CurrentSourceName() {

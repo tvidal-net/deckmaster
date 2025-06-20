@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -49,26 +48,24 @@ const (
 	longPressDuration = 350 * time.Millisecond
 )
 
-func fatal(v ...interface{}) {
-	go func() { shutdown <- errors.New(fmt.Sprint(v...)) }()
-}
-
-func fatalf(format string, a ...interface{}) {
-	go func() { shutdown <- fmt.Errorf(format, a...) }()
-}
-
-func errorf(e error) {
+func printError(e error) {
 	if e != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n\n", e.Error())
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", e.Error())
 	}
+}
+
+func errorLog(format string, args ...any) {
+	printError(fmt.Errorf(format, args...))
+}
+
+func fatal(e error) {
+	go func() { shutdown <- e }()
 }
 
 func verbosef(format string, a ...interface{}) {
-	if !*verbose {
-		return
+	if *verbose {
+		fmt.Printf(format+"\n", a...)
 	}
-
-	fmt.Printf(format+"\n", a...)
 }
 
 func expandPath(base, path string) (string, error) {
@@ -146,7 +143,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			if !state && k.Pressed {
 				// key was pressed
 				go func() {
-					// launch timer to observe keystate
+					// launch timer to observe KeyState
 					time.Sleep(longPressDuration)
 
 					if state, ok := keyStates.Load(k.Index); ok && state.(bool) {
@@ -190,7 +187,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			nd, err := LoadDeck(dev, ".", deck.File)
 			if err != nil {
 				verbosef("The new configuration is not valid, keeping the current one.")
-				fmt.Fprintf(os.Stderr, "Configuration Error: %s\n", err)
+				errorLog("Configuration Error: %s", err)
 				continue
 			}
 
@@ -241,7 +238,7 @@ func initDevice() (*streamdeck.Device, error) {
 		if !found {
 			fmt.Fprintln(os.Stderr, "Can't find device. Available devices:")
 			for _, v := range d {
-				fmt.Fprintf(os.Stderr, "Serial %s (%d buttons)\n", v.Serial, dev.Keys)
+				errorLog("Serial %s (%d buttons)", v.Serial, dev.Keys)
 			}
 			os.Exit(1)
 		}
@@ -304,14 +301,14 @@ func run() error {
 		defer xorg.Close()
 		xorg.TrackWindows(tch, time.Second)
 	} else {
-		fmt.Fprintf(os.Stderr, "Could not connect to X server: %s\n", err)
+		errorLog("Could not connect to X server: %s", err)
 		fmt.Fprintln(os.Stderr, "Tracking window manager will be disabled!")
 	}
 
 	// initialize virtual keyboard
 	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not create virtual input device (/dev/uinput): %s\n", err)
+		errorLog("Could not create virtual input device (/dev/uinput): %s", err)
 		fmt.Fprintln(os.Stderr, "Emulating keyboard events will be disabled!")
 	} else {
 		defer keyboard.Close() //nolint:errcheck

@@ -54,7 +54,7 @@ func (w *MuteWidget) TriggerAction(hold bool) {
 	if !hold {
 		err := pa.ToggleMute(w.playback)
 		if err != nil {
-			errorf(err)
+			printError(err)
 		}
 	}
 }
@@ -63,7 +63,7 @@ func (w *MuteWidget) MuteChanged(playback bool) {
 	if playback == w.playback {
 		err := w.Update()
 		if err != nil {
-			errorf(err)
+			printError(err)
 		}
 	}
 }

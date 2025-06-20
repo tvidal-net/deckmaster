@@ -151,7 +151,7 @@ func emulateKeyPress(keys string) {
 		k = formatKeycodes(strings.TrimSpace(k))
 		kc, err := strconv.Atoi(k)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s is not a valid keycode: %s\n", k, err)
+			errorLog("%s is not a valid keycode: %s", k, err)
 		}
 
 		if i+1 < len(kk) {
@@ -167,7 +167,7 @@ func emulateKeyPress(keys string) {
 func emulateClipboard(text string) {
 	err := clipboard.WriteAll(text)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Pasting to clipboard failed: %s\n", err)
+		errorLog("Pasting to clipboard failed: %s", err)
 	}
 
 	// paste the string
@@ -178,7 +178,7 @@ func emulateClipboard(text string) {
 func executeDBusMethod(object, path, method, args string) {
 	call := dbusConn.Object(object, dbus.ObjectPath(path)).Call(method, 0, args)
 	if call.Err != nil {
-		fmt.Fprintf(os.Stderr, "dbus call failed: %s\n", call.Err)
+		errorLog("dbus call failed: %s", call.Err)
 	}
 }
 
@@ -197,7 +197,7 @@ func executeCommand(cmd string) error {
 	}
 
 	if err := c.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "Command failed: %s\n", err)
+		errorLog("Command failed: %s", err)
 		return err
 	}
 	return c.Wait()
@@ -251,7 +251,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 			switch {
 			case a.Device == "sleep":
 				if err := dev.Sleep(); err != nil {
-					fatalf("error: %v\n", err)
+					fatal(err)
 				}
 
 			case strings.HasPrefix(a.Device, "brightness"):
@@ -273,7 +273,7 @@ func (d *Deck) updateWidgets() {
 
 		// fmt.Println("Repaint", w.Key())
 		if err := w.Update(); err != nil {
-			fatalf("error: %v", err)
+			fatal(err)
 		}
 	}
 }
@@ -310,7 +310,7 @@ func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 	}
 
 	if v == math.MinInt64 {
-		fmt.Fprintf(os.Stderr, "Could not grok the brightness from value '%s'\n", value)
+		errorLog("Could not grok the brightness from value '%s'", value)
 		return
 	}
 
@@ -320,7 +320,7 @@ func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 		v = 100
 	}
 	if err := dev.SetBrightness(uint8(v)); err != nil {
-		fatalf("error: %v\n", err)
+		fatal(err)
 	}
 
 	*brightness = uint(v)
