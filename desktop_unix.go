@@ -197,7 +197,7 @@ func (x Xorg) name(w xproto.Window) (string, error) {
 func (x Xorg) icon(w xproto.Window) (image.Image, error) {
 	icon, err := xgraphics.FindIcon(x.util, w, 128, 128)
 	if err != nil {
-		errorLog("Could not find icon for window %d", w)
+		errorLogF("Could not find icon for window %d", w)
 		return nil, err
 	}
 
@@ -254,7 +254,7 @@ func (x Xorg) waitForEvent(events chan<- xgb.Event) {
 	for {
 		ev, err := x.conn.WaitForEvent()
 		if err != nil {
-			verbosef("wait for event: %s", err)
+			verboseLog("wait for event: %s", err)
 			continue
 		}
 		events <- ev

@@ -30,7 +30,7 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 	if err != nil {
 		return nil, err
 	}
-	verbosef("Loading deck: %s", path)
+	verboseLog("Loading deck: %s", path)
 
 	dc, err := LoadConfig(path)
 	if err != nil {
@@ -151,7 +151,7 @@ func emulateKeyPress(keys string) {
 		k = formatKeycodes(strings.TrimSpace(k))
 		kc, err := strconv.Atoi(k)
 		if err != nil {
-			errorLog("%s is not a valid keycode: %s", k, err)
+			errorLogF("%s is not a valid keycode: %s", k, err)
 		}
 
 		if i+1 < len(kk) {
@@ -167,7 +167,7 @@ func emulateKeyPress(keys string) {
 func emulateClipboard(text string) {
 	err := clipboard.WriteAll(text)
 	if err != nil {
-		errorLog("Pasting to clipboard failed: %s", err)
+		errorLogF("Pasting to clipboard failed: %s", err)
 	}
 
 	// paste the string
@@ -178,7 +178,7 @@ func emulateClipboard(text string) {
 func executeDBusMethod(object, path, method, args string) {
 	call := dbusConn.Object(object, dbus.ObjectPath(path)).Call(method, 0, args)
 	if call.Err != nil {
-		errorLog("dbus call failed: %s", call.Err)
+		errorLogF("dbus call failed: %s", call.Err)
 	}
 }
 
@@ -191,13 +191,13 @@ func executeCommand(cmd string) error {
 	args := strings.Split(cmd, " ")
 
 	c := exec.Command(args[0], args[1:]...) //nolint:gosec
-	if *verbose {
+	if *verboseConfig {
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 	}
 
 	if err := c.Start(); err != nil {
-		errorLog("Command failed: %s", err)
+		errorLogF("Command failed: %s", err)
 		return err
 	}
 	return c.Wait()
@@ -299,18 +299,18 @@ func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 		if v == math.MinInt64 {
 			v = 10
 		}
-		v = int64(*brightness) - v
+		v = int64(*brightnessConfig) - v
 	case '+': // brightness+[n]:
 		if v == math.MinInt64 {
 			v = 10
 		}
-		v = int64(*brightness) + v
+		v = int64(*brightnessConfig) + v
 	default:
 		v = math.MinInt64
 	}
 
 	if v == math.MinInt64 {
-		errorLog("Could not grok the brightness from value '%s'", value)
+		errorLogF("Could not grok the brightness from value '%s'", value)
 		return
 	}
 
@@ -323,5 +323,5 @@ func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 		fatal(err)
 	}
 
-	*brightness = uint(v)
+	*brightnessConfig = uint(v)
 }

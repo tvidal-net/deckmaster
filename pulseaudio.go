@@ -106,13 +106,13 @@ func (c *PulseAudio) Start() {
 		_ = <-pulseAudioUpdates
 		serverInfo, err := c.client.ServerInfo()
 		if err != nil {
-			printError(err)
+			errorLog(err)
 			continue
 		}
 
 		defaultSink, err := getSink(serverInfo.DefaultSink, &c.client)
 		if err != nil {
-			printError(err)
+			errorLog(err)
 			continue
 		}
 		if defaultSink.Name != c.CurrentSinkName() {
@@ -126,7 +126,7 @@ func (c *PulseAudio) Start() {
 
 		defaultSource, err := getSource(serverInfo.DefaultSource, &c.client)
 		if err != nil {
-			printError(err)
+			errorLog(err)
 			continue
 		}
 		if defaultSource.Name != c.CurrentSourceName() {
@@ -161,7 +161,7 @@ func (c *PulseAudio) CurrentSinkName() string {
 }
 
 func (c *PulseAudio) SetSink(partialName string) error {
-	verbosef("currentSink: %s", c.CurrentSinkName())
+	verboseLog("currentSink: %s", c.CurrentSinkName())
 	sinks, err := c.client.Sinks()
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (c *PulseAudio) SetSink(partialName string) error {
 	for _, sink := range sinks {
 		sinkName := sink.Name
 		if sink.Name != c.CurrentSinkName() && strings.Contains(sinkName, partialName) {
-			verbosef("setSink \"%s\"=%s", partialName, sinkName)
+			verboseLog("setSink \"%s\"=%s", partialName, sinkName)
 			return c.client.SetDefaultSink(sinkName)
 		}
 	}
@@ -181,7 +181,7 @@ func (c *PulseAudio) CurrentSourceName() string {
 }
 
 func (c *PulseAudio) SetSource(partialName string) error {
-	verbosef("currentSource: %s", c.CurrentSourceName())
+	verboseLog("currentSource: %s", c.CurrentSourceName())
 	sources, err := c.client.Sources()
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (c *PulseAudio) SetSource(partialName string) error {
 		if source.MonitorSourceName == "" {
 			sourceName := source.Name
 			if source.Name != c.CurrentSourceName() && strings.Contains(sourceName, partialName) {
-				verbosef("setSource \"%s\"=%s", partialName, sourceName)
+				verboseLog("setSource \"%s\"=%s", partialName, sourceName)
 				return c.client.SetDefaultSource(sourceName)
 			}
 		}

@@ -35,12 +35,12 @@ var (
 	xorg          *Xorg
 	recentWindows []Window
 
-	deckFile   = flag.String("deck", "main.deck", "path to deck config file")
-	device     = flag.String("device", "", "which device to use (serial number)")
-	brightness = flag.Uint("brightness", 80, "brightness in percent")
-	sleep      = flag.String("sleep", "", "sleep timeout")
-	verbose    = flag.Bool("verbose", false, "verbose output")
-	version    = flag.Bool("version", false, "display version")
+	deckFileConfig   = flag.String("deck", "main.deck", "path to deck config file")
+	deviceConfig     = flag.String("device", "", "which device to use (serial number)")
+	brightnessConfig = flag.Uint("brightness", 80, "brightness in percent")
+	sleepConfig      = flag.String("sleep", "", "sleep timeout")
+	verboseConfig    = flag.Bool("verbose", false, "verbose output")
+	versionConfig    = flag.Bool("version", false, "display version")
 )
 
 const (
@@ -48,22 +48,22 @@ const (
 	longPressDuration = 350 * time.Millisecond
 )
 
-func printError(e error) {
+func errorLog(e error) {
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", e.Error())
 	}
 }
 
-func errorLog(format string, args ...any) {
-	printError(fmt.Errorf(format, args...))
+func errorLogF(format string, args ...any) {
+	errorLog(fmt.Errorf(format, args...))
 }
 
 func fatal(e error) {
 	go func() { shutdown <- e }()
 }
 
-func verbosef(format string, a ...interface{}) {
-	if *verbose {
+func verboseLog(format string, a ...interface{}) {
+	if *verboseConfig {
 		fmt.Printf(format+"\n", a...)
 	}
 }
@@ -136,7 +136,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			if state && !k.Pressed {
 				// key was released
 				if time.Since(keyTimestamps[k.Index]) < longPressDuration {
-					verbosef("Triggering short action for key %d", k.Index)
+					verboseLog("Triggering short action for key %d", k.Index)
 					deck.triggerAction(dev, k.Index, false)
 				}
 			}
@@ -148,7 +148,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 					if state, ok := keyStates.Load(k.Index); ok && state.(bool) {
 						// key still pressed
-						verbosef("Triggering long action for key %d", k.Index)
+						verboseLog("Triggering long action for key %d", k.Index)
 						deck.triggerAction(dev, k.Index, true)
 					}
 				}()
@@ -182,12 +182,12 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			return err
 
 		case <-hup:
-			verbosef("Received SIGHUP, reloading configuration...")
+			verboseLog("Received SIGHUP, reloading configuration...")
 
 			nd, err := LoadDeck(dev, ".", deck.File)
 			if err != nil {
-				verbosef("The new configuration is not valid, keeping the current one.")
-				errorLog("Configuration Error: %s", err)
+				verboseLog("The new configuration is not valid, keeping the current one.")
+				errorLogF("Configuration Error: %s", err)
 				continue
 			}
 
@@ -226,10 +226,10 @@ func initDevice() (*streamdeck.Device, error) {
 	}
 
 	dev := d[0]
-	if len(*device) > 0 {
+	if len(*deviceConfig) > 0 {
 		found := false
 		for _, v := range d {
-			if v.Serial == *device {
+			if v.Serial == *deviceConfig {
 				dev = v
 				found = true
 				break
@@ -238,7 +238,7 @@ func initDevice() (*streamdeck.Device, error) {
 		if !found {
 			fmt.Fprintln(os.Stderr, "Can't find device. Available devices:")
 			for _, v := range d {
-				errorLog("Serial %s (%d buttons)", v.Serial, dev.Keys)
+				errorLogF("Serial %s (%d buttons)", v.Serial, dev.Keys)
 			}
 			os.Exit(1)
 		}
@@ -251,23 +251,23 @@ func initDevice() (*streamdeck.Device, error) {
 	if err != nil {
 		return &dev, err
 	}
-	verbosef("Found device with serial %s (%d buttons, firmware %s)",
+	verboseLog("Found device with serial %s (%d buttons, firmware %s)",
 		dev.Serial, dev.Keys, ver)
 
 	if err := dev.Reset(); err != nil {
 		return &dev, err
 	}
 
-	if *brightness > 100 {
-		*brightness = 100
+	if *brightnessConfig > 100 {
+		*brightnessConfig = 100
 	}
-	if err = dev.SetBrightness(uint8(*brightness)); err != nil {
+	if err = dev.SetBrightness(uint8(*brightnessConfig)); err != nil {
 		return &dev, err
 	}
 
 	dev.SetSleepFadeDuration(fadeDuration)
-	if len(*sleep) > 0 {
-		timeout, err := time.ParseDuration(*sleep)
+	if len(*sleepConfig) > 0 {
+		timeout, err := time.ParseDuration(*sleepConfig)
 		if err != nil {
 			return &dev, err
 		}
@@ -301,14 +301,14 @@ func run() error {
 		defer xorg.Close()
 		xorg.TrackWindows(tch, time.Second)
 	} else {
-		errorLog("Could not connect to X server: %s", err)
+		errorLogF("Could not connect to X server: %s", err)
 		fmt.Fprintln(os.Stderr, "Tracking window manager will be disabled!")
 	}
 
 	// initialize virtual keyboard
 	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
 	if err != nil {
-		errorLog("Could not create virtual input device (/dev/uinput): %s", err)
+		errorLogF("Could not create virtual input device (/dev/uinput): %s", err)
 		fmt.Fprintln(os.Stderr, "Emulating keyboard events will be disabled!")
 	} else {
 		defer keyboard.Close() //nolint:errcheck
@@ -322,7 +322,7 @@ func run() error {
 	pa = newPulseAudio
 
 	// load deck
-	deck, err = LoadDeck(dev, ".", *deckFile)
+	deck, err = LoadDeck(dev, ".", *deckFileConfig)
 	if err != nil {
 		return fmt.Errorf("Can't load deck: %s", err)
 	}
@@ -334,7 +334,7 @@ func run() error {
 func main() {
 	flag.Parse()
 
-	if *version {
+	if *versionConfig {
 		if len(CommitSHA) > 7 {
 			CommitSHA = CommitSHA[:7]
 		}

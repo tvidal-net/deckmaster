@@ -112,7 +112,7 @@ func (w *WeatherData) Fetch() {
 	if time.Since(lastRefresh) < time.Minute*15 {
 		return
 	}
-	verbosef("Refreshing weather data...")
+	verboseLog("Refreshing weather data...")
 
 	url := "http://wttr.in/" + w.location + "?format=%x+%t" + formatUnit(w.unit)
 

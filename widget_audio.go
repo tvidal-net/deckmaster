@@ -82,19 +82,19 @@ func (w *AudioWidget) IsMainStreamDefault() bool {
 
 func (w *AudioWidget) SetSinkStream(alt bool) {
 	if alt {
-		printError(pa.SetSink(w.AltSinkStream()))
+		errorLog(pa.SetSink(w.AltSinkStream()))
 	} else {
-		printError(pa.SetSink(w.MainSinkStream()))
+		errorLog(pa.SetSink(w.MainSinkStream()))
 	}
 }
 
 func (w *AudioWidget) SetSourceStream(alt bool) {
 	if alt {
-		printError(pa.SetSource(w.AltSourceStream()))
+		errorLog(pa.SetSource(w.AltSourceStream()))
 	} else {
-		printError(pa.SetSource(w.MainSourceStream()))
+		errorLog(pa.SetSource(w.MainSourceStream()))
 	}
-	printError(w.Update())
+	errorLog(w.Update())
 }
 
 func (w *AudioWidget) Update() error {
@@ -113,10 +113,10 @@ func (w *AudioWidget) TriggerAction(hold bool) {
 
 func (w *AudioWidget) AudioChanged(changeType ChangeType) {
 	if changeType == SinkChanged {
-		verbosef("SinkChanged")
+		verboseLog("SinkChanged")
 		w.SetSourceStream(!w.IsMainStreamDefault())
 	} else {
-		verbosef("SourceChanged")
-		printError(w.Update())
+		verboseLog("SourceChanged")
+		errorLog(w.Update())
 	}
 }
