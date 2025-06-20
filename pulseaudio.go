@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"github.com/tvidal-net/pulseaudio"
-	"os"
 	"strings"
 	"time"
 )
@@ -22,10 +20,6 @@ type PulseAudio struct {
 	currentSink   pulseaudio.Sink
 	currentSource pulseaudio.Source
 	updates       chan ChangeType
-}
-
-func paError(err error) {
-	fmt.Fprintln(os.Stderr, "pulseaudio client error:", err)
 }
 
 func getSink(name string, client *pulseaudio.Client) (*pulseaudio.Sink, error) {
@@ -95,7 +89,7 @@ func (c *PulseAudio) Start() {
 	for {
 		clientUpdates, err := c.client.Updates()
 		if err != nil {
-			paError(err)
+			errorLog(err)
 			time.Sleep(time.Second)
 		} else {
 			pulseAudioUpdates = clientUpdates
