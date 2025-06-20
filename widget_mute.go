@@ -1,97 +1,67 @@
 package main
 
 import (
-	"github.com/godbus/dbus/v5"
 	"image"
 )
 
 const (
 	StreamConfig    = "stream"
-	DisabledConfig  = "disabled"
+	MutedConfig     = "muted"
 	MicStreamConfig = "mic"
-)
-
-var (
-	cnn = NewKMixerConnection()
 )
 
 type MuteWidget struct {
 	*ButtonWidget
 
-	disabled image.Image
+	muted    image.Image
 	playback bool
-	enabled  bool
-	state    bool
 }
 
-func enabled(playback bool) (bool, error) {
-	if playback {
-		return cnn.isPlaybackMuted()
-	} else {
-		return cnn.isMicMuted()
-	}
+type MuteChangedMonitor interface {
+	MuteChanged(playback bool)
 }
 
 func NewMuteWidget(bw *BaseWidget, opts WidgetConfig) (*MuteWidget, error) {
-	var disabled, stream string
-	_ = ConfigValue(opts.Config[DisabledConfig], &disabled)
+	var muted, stream string
+	_ = ConfigValue(opts.Config[MutedConfig], &muted)
 	_ = ConfigValue(opts.Config[StreamConfig], &stream)
 	button, err := NewButtonWidget(bw, opts)
 	if err != nil {
 		return nil, err
 	}
-	isPlaybackMute := stream != MicStreamConfig
-	initialState, _ := enabled(isPlaybackMute)
+	isPlayback := stream != MicStreamConfig
 	w := &MuteWidget{
 		ButtonWidget: button,
-		playback:     isPlaybackMute,
-		enabled:      initialState,
-		state:        !initialState,
+		playback:     isPlayback,
 	}
-	if err := w.LoadImage(&w.disabled, disabled); err != nil {
+	if err := w.LoadImage(&w.muted, muted); err != nil {
 		return nil, err
 	}
 	return w, nil
 }
 
-func (w *MuteWidget) Signal(signal *dbus.Signal) {
-	if isControlChanged(signal) && w.playback == isPlayback(signal) {
-		enabled, err := enabled(w.playback)
-		if err != nil {
-			errorf(err)
-		}
-		w.enabled = enabled
-	}
-}
-
-func (w *MuteWidget) RequiresUpdate() bool {
-	return w.enabled != w.state
-}
-
 func (w *MuteWidget) Update() error {
-	if w.enabled != w.state {
-		var icon image.Image
-		if w.enabled {
-			icon = w.icon
-		} else {
-			icon = w.disabled
-		}
-		w.state = w.enabled
-		return w.RenderButton(icon)
+	if pa.Muted(w.playback) {
+		return w.RenderButton(w.muted)
+	} else {
+		return w.RenderButton(w.icon)
 	}
-	return nil
 }
 
 func (w *MuteWidget) TriggerAction(hold bool) {
-	var err error
 	if !hold {
-		if w.playback {
-			err = cnn.TogglePlaybackMute()
-		} else {
-			err = cnn.ToggleMicMute()
+		err := pa.ToggleMute(w.playback)
+		if err != nil {
+			errorf(err)
 		}
 	}
-	if err != nil {
-		errorf(err)
+}
+
+func (w *MuteWidget) MuteChanged(playback bool) {
+	if playback == w.playback {
+		err := w.Update()
+		if err != nil {
+			errorf(err)
+		}
 	}
 }

@@ -2,17 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/lawl/pulseaudio"
+	"github.com/tvidal-net/pulseaudio"
 	"os"
 	"time"
 )
-
-type PulseAudio struct {
-	client        pulseaudio.Client
-	defaultSink   pulseaudio.Sink
-	defaultSource pulseaudio.Source
-	updates       chan ChangeType
-}
 
 const (
 	SinkChanged = iota
@@ -22,6 +15,13 @@ const (
 )
 
 type ChangeType uint8
+
+type PulseAudio struct {
+	client        pulseaudio.Client
+	defaultSink   pulseaudio.Sink
+	defaultSource pulseaudio.Source
+	updates       chan ChangeType
+}
 
 func paError(err error) {
 	fmt.Fprintln(os.Stderr, "pulseaudio client error:", err)
@@ -37,7 +37,7 @@ func getSink(name string, client *pulseaudio.Client) (*pulseaudio.Sink, error) {
 			return &sink, nil
 		}
 	}
-	return nil, nil
+	return nil, &pulseaudio.Error{Cmd: "default sink", Code: 3}
 }
 
 func getSource(name string, client *pulseaudio.Client) (*pulseaudio.Source, error) {
@@ -50,7 +50,7 @@ func getSource(name string, client *pulseaudio.Client) (*pulseaudio.Source, erro
 			return &source, nil
 		}
 	}
-	return nil, nil
+	return nil, &pulseaudio.Error{Cmd: "default source", Code: 3}
 }
 
 func NewPulseAudio() (*PulseAudio, error) {
@@ -76,15 +76,16 @@ func NewPulseAudio() (*PulseAudio, error) {
 		client.Close()
 		return nil, err
 	}
-	return &PulseAudio{
+	pulseAudio := &PulseAudio{
 		*client,
 		*defaultSink,
 		*defaultSource,
 		make(chan ChangeType),
-	}, nil
+	}
+	return pulseAudio, nil
 }
 
-func (c *PulseAudio) Updates() chan ChangeType {
+func (c *PulseAudio) Updates() <-chan ChangeType {
 	return c.updates
 }
 
@@ -135,6 +136,22 @@ func (c *PulseAudio) Start() {
 				}
 			}
 		}
+	}
+}
+
+func (c *PulseAudio) Muted(playback bool) bool {
+	if playback {
+		return c.defaultSink.Muted
+	} else {
+		return c.defaultSource.Muted
+	}
+}
+
+func (c *PulseAudio) ToggleMute(playback bool) error {
+	if playback {
+		return c.client.SetSinkMute(!c.defaultSink.Muted, c.defaultSink.Name)
+	} else {
+		return c.client.SetSourceMute(!c.defaultSource.Muted, c.defaultSource.Name)
 	}
 }
 

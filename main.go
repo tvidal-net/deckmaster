@@ -32,6 +32,7 @@ var (
 	keyboard uinput.Keyboard
 	shutdown = make(chan error)
 
+	pa            *PulseAudio
 	xorg          *Xorg
 	recentWindows []Window
 
@@ -110,6 +111,15 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 		}
 	}
 
+	var muteWidgets []MuteChangedMonitor
+	for _, widget := range deck.Widgets {
+		muteWidget, success := widget.(MuteChangedMonitor)
+		if success {
+			muteWidgets = append(muteWidgets, muteWidget)
+		}
+	}
+	go pa.Start()
+
 	kch, err := dev.ReadKeys()
 	if err != nil {
 		return err
@@ -159,6 +169,15 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			if dbusSignal != nil {
 				for _, w := range monitorWidgets {
 					w.Signal(dbusSignal)
+				}
+			}
+
+		case pulseAudioChangeType := <-pa.Updates():
+			switch pulseAudioChangeType {
+			case SinkMuteChanged, SourceMuteChanged:
+				playback := pulseAudioChangeType == SinkMuteChanged
+				for _, w := range muteWidgets {
+					w.MuteChanged(playback)
 				}
 			}
 
@@ -305,6 +324,13 @@ func run() error {
 	} else {
 		defer keyboard.Close() //nolint:errcheck
 	}
+
+	// initialize PulseAudio
+	newPulseAudio, err := NewPulseAudio()
+	if err != nil {
+		return err
+	}
+	pa = newPulseAudio
 
 	// load deck
 	deck, err = LoadDeck(dev, ".", *deckFile)
