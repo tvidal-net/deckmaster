@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/godbus/dbus/v5"
 	"image"
 	"image/color"
 	"image/draw"
@@ -41,10 +40,6 @@ type BaseWidget struct {
 	background image.Image
 	lastUpdate time.Time
 	interval   time.Duration
-}
-
-type WidgetMonitor interface {
-	Signal(signal *dbus.Signal)
 }
 
 // Key returns the key a widget is mapped to.

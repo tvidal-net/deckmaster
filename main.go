@@ -96,21 +96,6 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	var keyStates sync.Map
 	keyTimestamps := make(map[uint8]time.Time)
 
-	monitor, err := NewDBusMonitor(KMixerInterfaceRule)
-	if err != nil {
-		return err
-	}
-	go monitor.Start()
-	defer monitor.Close()
-
-	var monitorWidgets []WidgetMonitor
-	for _, widget := range deck.Widgets {
-		monitorWidget, success := widget.(WidgetMonitor)
-		if success {
-			monitorWidgets = append(monitorWidgets, monitorWidget)
-		}
-	}
-
 	var muteWidgets []MuteChangedMonitor
 	for _, widget := range deck.Widgets {
 		muteWidget, success := widget.(MuteChangedMonitor)
@@ -164,13 +149,6 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				}()
 			}
 			keyTimestamps[k.Index] = time.Now()
-
-		case dbusSignal := <-monitor.Channel():
-			if dbusSignal != nil {
-				for _, w := range monitorWidgets {
-					w.Signal(dbusSignal)
-				}
-			}
 
 		case pulseAudioChangeType := <-pa.Updates():
 			switch pulseAudioChangeType {
