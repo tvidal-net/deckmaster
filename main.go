@@ -156,13 +156,11 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			keyTimestamps[k.Index] = time.Now()
 
 		case changeType := <-pa.Updates():
+			playback := changeType == SinkMuteChanged || changeType == SinkChanged
+			for _, w := range muteWidgets {
+				w.MuteChanged(playback)
+			}
 			switch changeType {
-			case SinkMuteChanged, SourceMuteChanged:
-				playback := changeType == SinkMuteChanged
-				for _, w := range muteWidgets {
-					w.MuteChanged(playback)
-				}
-
 			case SinkChanged, SourceChanged:
 				for _, w := range audioWidgets {
 					w.AudioStreamChanged(changeType)

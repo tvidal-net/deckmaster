@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"image"
-	"os"
 )
 
 // RecentWindowWidget is a widget displaying a recently activated window.

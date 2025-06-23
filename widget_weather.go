@@ -7,7 +7,6 @@ import (
 	"image"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
