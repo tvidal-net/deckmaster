@@ -95,19 +95,6 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	var keyStates sync.Map
 	keyTimestamps := make(map[uint8]time.Time)
 
-	var audioWidgets []AudioChangedMonitor
-	var muteWidgets []MuteChangedMonitor
-	for _, widget := range deck.Widgets {
-		muteWidget, success := widget.(MuteChangedMonitor)
-		if success {
-			muteWidgets = append(muteWidgets, muteWidget)
-		}
-
-		audioWidget, success := widget.(AudioChangedMonitor)
-		if success {
-			audioWidgets = append(audioWidgets, audioWidget)
-		}
-	}
 	go pa.Start()
 
 	kch, err := dev.ReadKeys()
@@ -157,13 +144,16 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 		case changeType := <-pa.Updates():
 			playback := changeType == SinkMuteChanged || changeType == SinkChanged
-			for _, w := range muteWidgets {
-				w.MuteChanged(playback)
-			}
-			switch changeType {
-			case SinkChanged, SourceChanged:
-				for _, w := range audioWidgets {
-					w.AudioStreamChanged(changeType)
+			for _, widget := range deck.Widgets {
+				w, success := widget.(MuteChangedMonitor)
+				if success {
+					w.MuteChanged(playback)
+				}
+				if changeType == SinkChanged || changeType == SourceChanged {
+					w, success := widget.(AudioChangedMonitor)
+					if success {
+						w.AudioStreamChanged(changeType)
+					}
 				}
 			}
 
