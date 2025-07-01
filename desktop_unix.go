@@ -64,6 +64,8 @@ func Connect(display string) (*Xorg, error) {
 	if err := screensaver.Init(x.conn); err == nil {
 		drw := xproto.Drawable(x.root)
 		screensaver.SelectInput(x.conn, drw, screensaver.EventNotifyMask)
+	} else {
+		return nil, err
 	}
 
 	setup := xproto.Setup(x.conn)

@@ -313,7 +313,7 @@ func run() error {
 	// load deck
 	deck, err = LoadDeck(dev, ".", *deckFileConfig)
 	if err != nil {
-		return fmt.Errorf("Can't load deck: %s", err)
+		return fmt.Errorf("can't load deck: %s", err)
 	}
 	deck.updateWidgets()
 
