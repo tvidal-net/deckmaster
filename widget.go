@@ -119,9 +119,6 @@ func NewWidget(dev *streamdeck.Device, base string, kc KeyConfig, bg image.Image
 	case "time":
 		return NewTimeWidget(bw, kc.Widget), nil
 
-	case "recentWindow":
-		return NewRecentWindowWidget(bw, kc.Widget)
-
 	case "top":
 		return NewTopWidget(bw, kc.Widget), nil
 
