@@ -5,6 +5,9 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"os"
 	"path/filepath"
 	"time"
@@ -130,7 +133,7 @@ func NewWidget(dev *streamdeck.Device, base string, kc KeyConfig, bg image.Image
 	}
 
 	// unknown widget ID
-	return nil, fmt.Errorf("Unknown widget with ID %s", kc.Widget.ID)
+	return nil, fmt.Errorf("unknown widget with ID %s", kc.Widget.ID)
 }
 
 // renders the widget including its background image.
@@ -166,6 +169,9 @@ func loadImage(path string) (image.Image, error) {
 	defer f.Close() //nolint:errcheck
 
 	icon, _, err := image.Decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("image=%s, %w", filepath.Base(path), err)
+	}
 	return icon, err
 }
 
