@@ -48,7 +48,7 @@ const (
 
 func errorLog(e error) {
 	if e != nil {
-		errorLogF("ERROR: %s\n", e.Error())
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", e.Error())
 	}
 }
 
