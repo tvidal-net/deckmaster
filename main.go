@@ -31,7 +31,9 @@ var (
 	keyboard uinput.Keyboard
 	shutdown = make(chan error)
 
-	pa *PulseAudio
+	pa            *PulseAudio
+	xorg          *Xorg
+	recentWindows []Window
 
 	deckFileConfig   = flag.String("deck", "main.deck", "path to deck config file")
 	deviceConfig     = flag.String("device", "", "which device to use (serial number)")
@@ -83,7 +85,7 @@ func expandPath(base, path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-func eventLoop(dev *streamdeck.Device) error {
+func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -153,6 +155,15 @@ func eventLoop(dev *streamdeck.Device) error {
 						w.AudioStreamChanged(changeType)
 					}
 				}
+			}
+
+		case e := <-tch:
+			switch event := e.(type) {
+			case WindowClosedEvent:
+				handleWindowClosed(event)
+
+			case ActiveWindowChangedEvent:
+				handleActiveWindowChanged(dev, event)
 			}
 
 		case err := <-shutdown:
@@ -271,6 +282,17 @@ func run() error {
 		return fmt.Errorf("Unable to connect to dbus: %s", err)
 	}
 
+	// initialize xorg connection and track window focus
+	tch := make(chan interface{})
+	xorg, err = Connect(os.Getenv("DISPLAY"))
+	if err == nil {
+		defer xorg.Close()
+		xorg.TrackWindows(tch, time.Second)
+	} else {
+		errorLogF("Could not connect to X server: %s", err.Error())
+		errorLogF("Tracking window manager will be disabled!")
+	}
+
 	// initialize virtual keyboard
 	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
 	if err != nil {
@@ -295,7 +317,7 @@ func run() error {
 	}
 	deck.updateWidgets()
 
-	return eventLoop(dev)
+	return eventLoop(dev, tch)
 }
 
 func main() {
