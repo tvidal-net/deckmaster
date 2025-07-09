@@ -303,12 +303,12 @@ func run() error {
 	}
 
 	// initialize PulseAudio
-	newPulseAudio, err := NewPulseAudio()
+	pa, err = NewPulseAudio()
 	if err != nil {
-		return err
+		errorLogF("Could not create pulse audio device: %s", err.Error())
+	} else {
+		defer pa.Close()
 	}
-	pa = newPulseAudio
-	defer pa.Close()
 
 	// load deck
 	deck, err = LoadDeck(dev, ".", *deckFileConfig)
