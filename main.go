@@ -54,7 +54,7 @@ func errorLog(e error, format string, args ...interface{}) {
 }
 
 func errorLogF(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, format, args...)
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 }
 
 func fatal(e error) {
@@ -263,12 +263,12 @@ func run() error {
 		defer closeDevice(dev)
 	}
 	if e != nil {
-		return fmt.Errorf("Unable to initialize Stream Deck: %s", e)
+		return fmt.Errorf("failed to initialize Stream Deck: %s", e)
 	}
 
 	// initialize dbus connection
 	if e := DBusConnect(); e != nil {
-		return fmt.Errorf("unable to connect to DBus\n\t%w", e)
+		return fmt.Errorf("failed to connect to DBus\n\t%w", e)
 	}
 
 	// initialize xorg connection and track window focus
@@ -283,9 +283,9 @@ func run() error {
 	}
 
 	// initialize virtual keyboard
-	keyboard, e = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
+	keyboard, e = uinput.CreateKeyboard("/dev/uinput", []byte("deckmaster"))
 	if e != nil {
-		errorLog(e, "Could not create virtual input device (/dev/uinput)")
+		errorLog(e, "failed to create virtual input device (/dev/uinput)")
 		errorLogF("Emulating keyboard events will be disabled!")
 	} else {
 		defer keyboard.Close() //nolint:errcheck
@@ -302,7 +302,7 @@ func run() error {
 	// load deck
 	deck, e = LoadDeck(dev, ".", *deckFileConfig)
 	if e != nil {
-		return fmt.Errorf("can't load deck: %s", e)
+		return fmt.Errorf("failed to load deck: %s", e)
 	}
 	deck.updateWidgets()
 

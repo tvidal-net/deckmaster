@@ -15,7 +15,7 @@ func DBusConnect() error {
 		return nil
 	}
 
-	dbusConnection, e := dbus.SessionBus()
+	dbusConnection, e := dbus.SessionBusPrivate()
 	if e != nil {
 		return e
 	}
