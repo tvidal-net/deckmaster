@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/godbus/dbus/v5"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -267,9 +268,11 @@ func run() error {
 	}
 
 	// initialize dbus connection
-	if e := DBusConnect(); e != nil {
+	sessionBus, e := dbus.ConnectSessionBus()
+	if e != nil {
 		return fmt.Errorf("failed to connect to DBus\n\t%w", e)
 	}
+	defer sessionBus.Close() //nolint:errcheck
 
 	// initialize xorg connection and track window focus
 	tch := make(chan interface{})
@@ -278,8 +281,7 @@ func run() error {
 		defer xorg.Close()
 		xorg.TrackWindows(tch, time.Second)
 	} else {
-		errorLog(e, "Could not connect to X server: %s")
-		errorLogF("Tracking window manager will be disabled!")
+		errorLog(e, "failed to connect to X server (Wayland?)")
 	}
 
 	// initialize virtual keyboard

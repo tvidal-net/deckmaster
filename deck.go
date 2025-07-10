@@ -173,7 +173,7 @@ func emulateClipboard(text string) {
 
 // executes a dbus method.
 func executeDBusMethod(config *DBusConfig) {
-	if e := CallDBus(config.Object, config.Path, config.Method, config.Value).Err; e != nil {
+	if e := CallDBus(config.Object, config.Path, config.Method, config.Value); e != nil {
 		errorLog(e, "DBus call failed %+v", config)
 	}
 }
