@@ -284,7 +284,7 @@ func run() error {
 
 	// initialize xorg connection and track window focus
 	tch := make(chan interface{})
-	xorg, err = Connect(os.Getenv("DISPLAY"))
+	xorg, err = Connect()
 	if err == nil {
 		defer xorg.Close()
 		xorg.TrackWindows(tch, time.Second)

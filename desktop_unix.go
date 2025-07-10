@@ -47,16 +47,16 @@ type Window struct {
 }
 
 // Connect establishes a connection with an Xorg display.
-func Connect(display string) (*Xorg, error) {
+func Connect() (*Xorg, error) {
 	var x Xorg
 	var err error
 
-	x.conn, err = xgb.NewConnDisplay(display)
+	x.conn, err = xgb.NewConn()
 	if err != nil {
 		return nil, err
 	}
 
-	x.util, err = xgbutil.NewConnDisplay(display)
+	x.util, err = xgbutil.NewConn()
 	if err != nil {
 		return nil, err
 	}
