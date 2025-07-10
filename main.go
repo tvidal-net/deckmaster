@@ -97,6 +97,8 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 	go pa.Start()
 
+	wch := MonitorActiveWindowChanged()
+
 	kch, e := dev.ReadKeys()
 	if e != nil {
 		return e
@@ -156,6 +158,9 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 					}
 				}
 			}
+
+		case windowClass := <-wch:
+			verboseLog("windowActivated: %s", windowClass)
 
 		case event := <-tch:
 			switch event := event.(type) {
@@ -264,13 +269,13 @@ func run() error {
 		defer closeDevice(dev)
 	}
 	if e != nil {
-		return fmt.Errorf("failed to initialize Stream Deck: %s", e)
+		return fmt.Errorf("failed to initialize Stream Deck: %w", e)
 	}
 
 	// initialize dbus connection
 	sessionBus, e := dbus.ConnectSessionBus()
 	if e != nil {
-		return fmt.Errorf("failed to connect to DBus\n\t%w", e)
+		return fmt.Errorf("failed to connect to DBus %w", e)
 	}
 	defer sessionBus.Close() //nolint:errcheck
 
