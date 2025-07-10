@@ -87,9 +87,9 @@ func (c *PulseAudio) Updates() <-chan ChangeType {
 func (c *PulseAudio) Start() {
 	var pulseAudioUpdates <-chan struct{}
 	for {
-		clientUpdates, err := c.client.Updates()
-		if err != nil {
-			errorLog(err)
+		clientUpdates, e := c.client.Updates()
+		if e != nil {
+			errorLog(e, "failed to subscribe to PulseAudio updates")
 			time.Sleep(time.Second)
 		} else {
 			pulseAudioUpdates = clientUpdates
@@ -98,15 +98,15 @@ func (c *PulseAudio) Start() {
 	}
 	for {
 		_ = <-pulseAudioUpdates
-		serverInfo, err := c.client.ServerInfo()
-		if err != nil {
-			errorLog(err)
+		serverInfo, e := c.client.ServerInfo()
+		if e != nil {
+			errorLog(e, "failed to get PulseAudio server info")
 			continue
 		}
 
-		defaultSink, err := getSink(serverInfo.DefaultSink, &c.client)
-		if err != nil {
-			errorLog(err)
+		defaultSink, e := getSink(serverInfo.DefaultSink, &c.client)
+		if e != nil {
+			errorLog(e, "failed to get PulseAudio sinks")
 			continue
 		}
 		if defaultSink.Name != c.CurrentSinkName() {
@@ -118,9 +118,9 @@ func (c *PulseAudio) Start() {
 			c.updates <- SinkMuteChanged
 		}
 
-		defaultSource, err := getSource(serverInfo.DefaultSource, &c.client)
-		if err != nil {
-			errorLog(err)
+		defaultSource, e := getSource(serverInfo.DefaultSource, &c.client)
+		if e != nil {
+			errorLog(e, "failed to get PulseAudio sources")
 			continue
 		}
 		if defaultSource.Name != c.CurrentSourceName() {

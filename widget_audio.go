@@ -82,19 +82,19 @@ func (w *AudioWidget) IsMainStreamDefault() bool {
 
 func (w *AudioWidget) SetSinkStream(alt bool) {
 	if alt {
-		errorLog(pa.SetSink(w.AltSinkStream()))
+		errorLog(pa.SetSink(w.AltSinkStream()), "failed to set PulseAudio sink stream")
 	} else {
-		errorLog(pa.SetSink(w.MainSinkStream()))
+		errorLog(pa.SetSink(w.MainSinkStream()), "failed to set PulseAudio sink stream")
 	}
 }
 
 func (w *AudioWidget) SetSourceStream(alt bool) {
 	if alt {
-		errorLog(pa.SetSource(w.AltSourceStream()))
+		errorLog(pa.SetSource(w.AltSourceStream()), "failed to set PulseAudio source stream")
 	} else {
-		errorLog(pa.SetSource(w.MainSourceStream()))
+		errorLog(pa.SetSource(w.MainSourceStream()), "failed to set PulseAudio source stream")
 	}
-	errorLog(w.Update())
+	errorLog(w.Update(), "failed to update Widget")
 }
 
 func (w *AudioWidget) Update() error {
@@ -117,6 +117,6 @@ func (w *AudioWidget) AudioStreamChanged(changeType ChangeType) {
 		w.SetSourceStream(!w.IsMainStreamDefault())
 	} else {
 		verboseLog("SourceChanged")
-		errorLog(w.Update())
+		errorLog(w.Update(), "failed to update Widget")
 	}
 }

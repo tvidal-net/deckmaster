@@ -46,14 +46,15 @@ const (
 	longPressDuration = 350 * time.Millisecond
 )
 
-func errorLog(e error) {
+func errorLog(e error, format string, args ...interface{}) {
 	if e != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n", e.Error())
+		message := fmt.Sprintf(format, args...)
+		_, _ = fmt.Fprintf(os.Stderr, "ERROR: %s\n\t%+v\n", message, e)
 	}
 }
 
-func errorLogF(format string, args ...any) {
-	errorLog(fmt.Errorf(format, args...))
+func errorLogF(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, format, args...)
 }
 
 func fatal(e error) {
@@ -95,9 +96,9 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 	go pa.Start()
 
-	kch, err := dev.ReadKeys()
-	if err != nil {
-		return err
+	kch, e := dev.ReadKeys()
+	if e != nil {
+		return e
 	}
 	for {
 		select {
@@ -106,8 +107,8 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 		case k, ok := <-kch:
 			if !ok {
-				if err = dev.Open(); err != nil {
-					return err
+				if e = dev.Open(); e != nil {
+					return e
 				}
 				continue
 			}
@@ -155,8 +156,8 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				}
 			}
 
-		case e := <-tch:
-			switch event := e.(type) {
+		case event := <-tch:
+			switch event := event.(type) {
 			case WindowClosedEvent:
 				handleWindowClosed(event)
 
@@ -170,10 +171,9 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 		case <-hup:
 			verboseLog("Received SIGHUP, reloading configuration...")
 
-			nd, err := LoadDeck(dev, ".", deck.File)
-			if err != nil {
-				verboseLog("The new configuration is not valid, keeping the current one.")
-				errorLogF("Configuration Error: %s", err.Error())
+			nd, e := LoadDeck(dev, ".", deck.File)
+			if e != nil {
+				errorLog(e, "invalid configuration")
 				continue
 			}
 
@@ -188,18 +188,10 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 }
 
 func closeDevice(dev *streamdeck.Device) {
-	if err := dev.Reset(); err != nil {
-		errorLogF("Unable to reset Stream Deck")
-	}
-	if err := dev.Clear(); err != nil {
-		errorLogF("Unable to clear the Stream Deck")
-	}
-	if err := dev.Sleep(); err != nil {
-		errorLogF("Unable to sleep the Stream Deck")
-	}
-	if err := dev.Close(); err != nil {
-		errorLogF("Unable to close Stream Deck")
-	}
+	errorLog(dev.Reset(), "failed to reset Stream Deck")
+	errorLog(dev.Clear(), "failed to clear the Stream Deck")
+	errorLog(dev.Sleep(), "failed to sleep the Stream Deck")
+	errorLog(dev.Close(), "failed to close Stream Deck")
 }
 
 func initDevice() (*streamdeck.Device, error) {
@@ -266,12 +258,12 @@ func initDevice() (*streamdeck.Device, error) {
 
 func run() error {
 	// initialize device
-	dev, err := initDevice()
+	dev, e := initDevice()
 	if dev != nil {
 		defer closeDevice(dev)
 	}
-	if err != nil {
-		return fmt.Errorf("Unable to initialize Stream Deck: %s", err)
+	if e != nil {
+		return fmt.Errorf("Unable to initialize Stream Deck: %s", e)
 	}
 
 	// initialize dbus connection
@@ -281,36 +273,36 @@ func run() error {
 
 	// initialize xorg connection and track window focus
 	tch := make(chan interface{})
-	xorg, err = Connect()
-	if err == nil {
+	xorg, e = Connect()
+	if e == nil {
 		defer xorg.Close()
 		xorg.TrackWindows(tch, time.Second)
 	} else {
-		errorLogF("Could not connect to X server: %s", err.Error())
+		errorLog(e, "Could not connect to X server: %s")
 		errorLogF("Tracking window manager will be disabled!")
 	}
 
 	// initialize virtual keyboard
-	keyboard, err = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
-	if err != nil {
-		errorLogF("Could not create virtual input device (/dev/uinput): %s", err.Error())
+	keyboard, e = uinput.CreateKeyboard("/dev/uinput", []byte("Deckmaster"))
+	if e != nil {
+		errorLog(e, "Could not create virtual input device (/dev/uinput)")
 		errorLogF("Emulating keyboard events will be disabled!")
 	} else {
 		defer keyboard.Close() //nolint:errcheck
 	}
 
 	// initialize PulseAudio
-	pa, err = NewPulseAudio()
-	if err != nil {
-		errorLogF("Could not create pulse audio device: %s", err.Error())
+	pa, e = NewPulseAudio()
+	if e != nil {
+		errorLog(e, "failed to create PulseAudio device")
 	} else {
 		defer pa.Close()
 	}
 
 	// load deck
-	deck, err = LoadDeck(dev, ".", *deckFileConfig)
-	if err != nil {
-		return fmt.Errorf("can't load deck: %s", err)
+	deck, e = LoadDeck(dev, ".", *deckFileConfig)
+	if e != nil {
+		return fmt.Errorf("can't load deck: %s", e)
 	}
 	deck.updateWidgets()
 
@@ -337,8 +329,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err := run(); err != nil {
-		errorLog(err)
+	if e := run(); e != nil {
+		errorLog(e, "fatal")
 		os.Exit(1)
 	}
 }

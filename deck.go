@@ -149,9 +149,9 @@ func emulateKeyPress(keys string) {
 	kk := strings.Split(keys, "-")
 	for i, k := range kk {
 		k = formatKeycodes(strings.TrimSpace(k))
-		kc, err := strconv.Atoi(k)
-		if err != nil {
-			errorLogF("%s is not a valid keycode: %s", k, err.Error())
+		kc, e := strconv.Atoi(k)
+		if e != nil {
+			errorLog(e, "%s is not a valid keycode", k)
 		}
 
 		if i+1 < len(kk) {
@@ -165,19 +165,16 @@ func emulateKeyPress(keys string) {
 
 // emulates a clipboard paste.
 func emulateClipboard(text string) {
-	err := clipboard.WriteAll(text)
-	if err != nil {
-		errorLogF("Pasting to clipboard failed: %s", err.Error())
-	}
+	errorLog(clipboard.WriteAll(text), "failed to paste from the Clipboard")
 
 	// paste the string
 	emulateKeyPress("29-47") // ctrl-v
 }
 
 // executes a dbus method.
-func executeDBusMethod(dbus *DBusConfig) {
-	if e := CallDBus(dbus.Object, dbus.Path, dbus.Method, dbus.Value).Err; e != nil {
-		errorLogF("DBus call failed:\n\t%w", e)
+func executeDBusMethod(config *DBusConfig) {
+	if e := CallDBus(config.Object, config.Path, config.Method, config.Value).Err; e != nil {
+		errorLog(e, "DBus call failed %+v", config)
 	}
 }
 
@@ -195,9 +192,8 @@ func executeCommand(cmd string) error {
 		c.Stderr = os.Stderr
 	}
 
-	if err := c.Start(); err != nil {
-		errorLogF("executeCommand failed: %s", err.Error())
-		return err
+	if e := c.Start(); e != nil {
+		return e
 	}
 	return c.Wait()
 }
@@ -220,7 +216,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 	if a.Deck != "" {
 		newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
 		if err != nil {
-			errorLogF("Can't load deck: %s", err.Error())
+			errorLog(err, "Failed to load deck %s", a.Deck)
 			return
 		}
 		if err := dev.Clear(); err != nil {
@@ -242,9 +238,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 	}
 	if a.Exec != "" {
 		go func(a *ActionConfig) {
-			if err := executeCommand(a.Exec); err != nil {
-				errorLog(err)
-			}
+			errorLog(executeCommand(a.Exec), "failed to execute command '%s'", a.Exec)
 		}(a)
 	}
 	if a.Device != "" {
@@ -280,7 +274,7 @@ func (d *Deck) updateWidgets() {
 // adjustBrightness adjusts the brightness.
 func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 	if len(value) == 0 {
-		errorLogF("No brightness value specified")
+		errorLogF("no brightness value specified")
 		return
 	}
 
@@ -309,7 +303,7 @@ func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 	}
 
 	if v == math.MinInt64 {
-		errorLogF("Could not grok the brightness from value '%s'", value)
+		errorLogF("could not grok the brightness from value '%s'", value)
 		return
 	}
 

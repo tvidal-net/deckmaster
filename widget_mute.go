@@ -52,18 +52,12 @@ func (w *MuteWidget) Update() error {
 
 func (w *MuteWidget) TriggerAction(hold bool) {
 	if !hold {
-		err := pa.ToggleMute(w.playback)
-		if err != nil {
-			errorLog(err)
-		}
+		errorLog(pa.ToggleMute(w.playback), "failed to toggle mute")
 	}
 }
 
 func (w *MuteWidget) MuteChanged(playback bool) {
 	if playback == w.playback {
-		err := w.Update()
-		if err != nil {
-			errorLog(err)
-		}
+		errorLog(w.Update(), "failed to update widget")
 	}
 }

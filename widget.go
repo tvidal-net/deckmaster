@@ -250,8 +250,8 @@ func drawString(img *image.RGBA, bounds image.Rectangle, ttf *truetype.Font, tex
 	}
 
 	c.SetSrc(image.NewUniform(color))
-	if _, err := c.DrawString(text, freetype.Pt(pt.X, pt.Y)); err != nil {
-		errorLogF("Can't render string: %s", err.Error())
+	if _, e := c.DrawString(text, freetype.Pt(pt.X, pt.Y)); e != nil {
+		errorLog(e, "failed to render string")
 		return
 	}
 }

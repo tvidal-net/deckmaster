@@ -115,16 +115,16 @@ func (w *WeatherData) Fetch() {
 
 	url := "http://wttr.in/" + w.location + "?format=%x+%t" + formatUnit(w.unit)
 
-	resp, err := http.Get(url) //nolint:gosec
-	if err != nil {
-		errorLogF("can't fetch weather data: %s", err.Error())
+	resp, e := http.Get(url) //nolint:gosec
+	if e != nil {
+		errorLog(e, "failed to fetch weather data")
 		return
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		errorLogF("can't read weather data: %s", err.Error())
+	body, e := ioutil.ReadAll(resp.Body)
+	if e != nil {
+		errorLog(e, "failed to read weather data")
 		return
 	}
 
