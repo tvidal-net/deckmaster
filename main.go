@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/bendahl/uinput"
-	"github.com/godbus/dbus/v5"
 	"github.com/mitchellh/go-homedir"
 	"github.com/muesli/streamdeck"
 )
@@ -27,7 +26,6 @@ var (
 
 	deck *Deck
 
-	dbusConn *dbus.Conn
 	keyboard uinput.Keyboard
 	shutdown = make(chan error)
 
@@ -277,9 +275,8 @@ func run() error {
 	}
 
 	// initialize dbus connection
-	dbusConn, err = dbus.SessionBus()
-	if err != nil {
-		return fmt.Errorf("Unable to connect to dbus: %s", err)
+	if e := DBusConnect(); e != nil {
+		return fmt.Errorf("unable to connect to DBus\n\t%w", e)
 	}
 
 	// initialize xorg connection and track window focus

@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
-	"github.com/godbus/dbus/v5"
 	"github.com/muesli/streamdeck"
 )
 
@@ -176,10 +175,9 @@ func emulateClipboard(text string) {
 }
 
 // executes a dbus method.
-func executeDBusMethod(object, path, method, args string) {
-	call := dbusConn.Object(object, dbus.ObjectPath(path)).Call(method, 0, args)
-	if call.Err != nil {
-		errorLogF("dbus call failed: %s", call.Err.Error())
+func executeDBusMethod(dbus *DBusConfig) {
+	if e := CallDBus(dbus.Object, dbus.Path, dbus.Method, dbus.Value).Err; e != nil {
+		errorLogF("DBus call failed:\n\t%w", e)
 	}
 }
 
@@ -240,7 +238,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		emulateClipboard(a.Paste)
 	}
 	if a.DBus.Method != "" {
-		executeDBusMethod(a.DBus.Object, a.DBus.Path, a.DBus.Method, a.DBus.Value)
+		executeDBusMethod(&a.DBus)
 	}
 	if a.Exec != "" {
 		go func(a *ActionConfig) {
