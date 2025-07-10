@@ -21,7 +21,7 @@ import (
 type Deck struct {
 	File       string
 	Background image.Image
-	Widgets    []Widget
+	Widgets    map[uint8]Widget
 }
 
 // LoadDeck loads a deck configuration.
@@ -38,7 +38,8 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 	}
 
 	d := Deck{
-		File: path,
+		Widgets: make(map[uint8]Widget),
+		File:    path,
 	}
 	if dc.Background != "" {
 		bgpath, err := expandPath(filepath.Dir(path), dc.Background)
@@ -68,7 +69,7 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 			w = NewBaseWidget(dev, filepath.Dir(path), i, nil, nil, bg)
 		}
 
-		d.Widgets = append(d.Widgets, w)
+		d.Widgets[i] = w
 	}
 
 	return &d, nil
@@ -197,7 +198,7 @@ func executeCommand(cmd string) error {
 	}
 
 	if err := c.Start(); err != nil {
-		errorLogF("Command failed: %s", err.Error())
+		errorLogF("executeCommand failed: %s", err.Error())
 		return err
 	}
 	return c.Wait()
@@ -205,61 +206,61 @@ func executeCommand(cmd string) error {
 
 // triggerAction triggers an action.
 func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
-	for _, w := range d.Widgets {
-		if w.Key() != index {
-			continue
-		}
-		w.TriggerAction(hold)
+	var w = d.Widgets[index]
+	w.TriggerAction(hold)
 
-		var a *ActionConfig
-		if hold {
-			a = w.ActionHold()
-		} else {
-			a = w.Action()
+	var a *ActionConfig
+	if hold {
+		a = w.ActionHold()
+	} else {
+		a = w.Action()
+	}
+
+	if a == nil {
+		return
+	}
+	if a.Deck != "" {
+		newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
+		if err != nil {
+			errorLogF("Can't load deck: %s", err.Error())
+			return
+		}
+		if err := dev.Clear(); err != nil {
+			fatal(err)
+			return
 		}
 
-		if a == nil {
-			continue
-		}
-		if a.Deck != "" {
-			newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
-			if err != nil {
-				errorLogF("Can't load deck: %s", err.Error())
-				return
+		deck = newDeck
+		deck.updateWidgets()
+	}
+	if a.Keycode != "" {
+		emulateKeyPresses(a.Keycode)
+	}
+	if a.Paste != "" {
+		emulateClipboard(a.Paste)
+	}
+	if a.DBus.Method != "" {
+		executeDBusMethod(a.DBus.Object, a.DBus.Path, a.DBus.Method, a.DBus.Value)
+	}
+	if a.Exec != "" {
+		go func(a *ActionConfig) {
+			if err := executeCommand(a.Exec); err != nil {
+				errorLog(err)
 			}
-			if err := dev.Clear(); err != nil {
+		}(a)
+	}
+	if a.Device != "" {
+		switch {
+		case a.Device == "sleep":
+			if err := dev.Sleep(); err != nil {
 				fatal(err)
-				return
 			}
 
-			deck = newDeck
-			deck.updateWidgets()
-		}
-		if a.Keycode != "" {
-			emulateKeyPresses(a.Keycode)
-		}
-		if a.Paste != "" {
-			emulateClipboard(a.Paste)
-		}
-		if a.DBus.Method != "" {
-			executeDBusMethod(a.DBus.Object, a.DBus.Path, a.DBus.Method, a.DBus.Value)
-		}
-		if a.Exec != "" {
-			go executeCommand(a.Exec)
-		}
-		if a.Device != "" {
-			switch {
-			case a.Device == "sleep":
-				if err := dev.Sleep(); err != nil {
-					fatal(err)
-				}
+		case strings.HasPrefix(a.Device, "brightness"):
+			d.adjustBrightness(dev, strings.TrimPrefix(a.Device, "brightness"))
 
-			case strings.HasPrefix(a.Device, "brightness"):
-				d.adjustBrightness(dev, strings.TrimPrefix(a.Device, "brightness"))
-
-			default:
-				errorLogF("Unrecognized special action: %s", a.Device)
-			}
+		default:
+			errorLogF("Unrecognized special action: %s", a.Device)
 		}
 	}
 }
