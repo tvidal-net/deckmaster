@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,11 +17,31 @@ import (
 	"github.com/muesli/streamdeck"
 )
 
+var (
+	SPACES = regexp.MustCompile(`\s+`)
+	PATH   = strings.Split(os.Getenv("PATH"), ":")
+)
+
 // Deck is a set of widgets.
 type Deck struct {
 	File       string
 	Background image.Image
 	Widgets    map[uint8]Widget
+}
+
+func expandExecutable(exe string) string {
+	for _, base := range PATH {
+		cmd := filepath.Join(base, exe)
+		s, e := os.Stat(cmd)
+		if e != nil || s.IsDir() {
+			continue
+		}
+		fileMode := s.Mode()
+		if fileMode&0111 != 0 {
+			return cmd
+		}
+	}
+	return exe
 }
 
 // LoadDeck loads a deck configuration.
@@ -180,19 +201,17 @@ func executeDBusMethod(config *DBusConfig) {
 
 // executes a command.
 func executeCommand(cmd string) error {
-	exp, err := expandPath("", cmd)
-	if err == nil {
-		cmd = exp
-	}
-	args := strings.Split(cmd, " ")
+	args := SPACES.Split(cmd, -1)
+	exe := expandExecutable(args[0])
 
-	c := exec.Command(args[0], args[1:]...) //nolint:gosec
+	c := exec.Command(exe, args[1:]...) //nolint:gosec
 	if *verboseConfig {
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 	}
 
 	if e := c.Start(); e != nil {
+		errorLogF("failed to execute '%s %s'", exe, args[1:])
 		return e
 	}
 	return c.Wait()
@@ -238,7 +257,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 	}
 	if a.Exec != "" {
 		go func(a *ActionConfig) {
-			errorLog(executeCommand(a.Exec), "failed to execute command '%s'", a.Exec)
+			errorLog(executeCommand(a.Exec), "failed to execute command")
 		}(a)
 	}
 	if a.Device != "" {
