@@ -3,10 +3,12 @@ const path = "/Monitor";
 const method = "ActiveWindowChanged";
 
 function activeWindowChanged(window) {
-    const name = window.resourceName + "." + window.resourceClass;
-    const id = window.id.toString();
-    print("windowActivated: " + name + ' ' + id);
-    callDBus(service, path, service, method, name, id);
+    if (window) {
+        const name = window.resourceName + "." + window.resourceClass;
+        const id = "" + window.id;
+        print("windowActivated: name=" + name + ", id=" + window.id + ", window=" + window);
+        callDBus(service, path, service, method, name, id);
+    }
 }
 
 const signal = workspace.windowActivated ?? workspace.clientActivated
