@@ -214,7 +214,7 @@ func executeCommand(cmd string) error {
 		errorLogF("failed to execute '%s %s'", exe, args[1:])
 		return e
 	}
-	return c.Wait()
+	return c.Process.Release()
 }
 
 // triggerAction triggers an action.
@@ -256,9 +256,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		executeDBusMethod(&a.DBus)
 	}
 	if a.Exec != "" {
-		go func(a *ActionConfig) {
-			errorLog(executeCommand(a.Exec), "failed to execute command")
-		}(a)
+		errorLog(executeCommand(a.Exec), "failed to execute command")
 	}
 	if a.Device != "" {
 		switch {
