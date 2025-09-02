@@ -30,11 +30,11 @@ type WindowWidgets struct {
 
 // Deck is a set of widgets.
 type Deck struct {
-	File       string
-	Background image.Image
-	Windows    []WindowWidgets
-	Overrides  map[uint8]*Widget
-	Widgets    map[uint8]Widget
+	file       string
+	background image.Image
+	windows    []WindowWidgets
+	overrides  map[uint8]*Widget
+	widgets    map[uint8]Widget
 }
 
 func expandExecutable(exe string) string {
@@ -66,8 +66,9 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 	}
 
 	d := Deck{
-		Widgets: make(map[uint8]Widget),
-		File:    path,
+		overrides: make(map[uint8]*Widget),
+		widgets:   make(map[uint8]Widget),
+		file:      path,
 	}
 	if dc.Background != "" {
 		bgPath, err := expandPath(filepath.Dir(path), dc.Background)
@@ -97,7 +98,7 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 			w = NewBaseWidget(dev, filepath.Dir(path), i, nil, nil, bg)
 		}
 
-		d.Widgets[i] = w
+		d.widgets[i] = w
 	}
 
 	for _, w := range dc.Windows {
@@ -109,7 +110,7 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 	return &d, nil
 }
 
-func (d *Deck) addWindow(dev *streamdeck.Device, w *WindowConfig) error {
+func (deck *Deck) addWindow(dev *streamdeck.Device, w *WindowConfig) error {
 	verboseLog("loading window overrides %s:%s", w.Resource, w.Title)
 
 	resource, err := regexp.Compile(w.Resource)
@@ -130,27 +131,33 @@ func (d *Deck) addWindow(dev *streamdeck.Device, w *WindowConfig) error {
 		widgets:  make(map[uint8]Widget),
 	}
 	for _, key := range w.Keys {
-		if e := window.addWidget(dev, d, key); e != nil {
+		if e := window.addWidget(dev, deck, key); e != nil {
 			errorLogF("failed to add widget %s:%s[%d]", w.Resource, w.Title, key.Index)
 			return e
 		}
 	}
-	d.Windows = append(d.Windows, window)
+	deck.windows = append(deck.windows, window)
 	return nil
 }
 
-func (w *WindowWidgets) addWidget(dev *streamdeck.Device, deck *Deck, key KeyConfig) error {
+func (ww *WindowWidgets) addWidget(dev *streamdeck.Device, deck *Deck, key KeyConfig) error {
 	bg := deck.backgroundForKey(dev, key.Index)
-	widget, err := NewWidget(dev, filepath.Dir(deck.File), key, bg)
+	widget, err := NewWidget(dev, filepath.Dir(deck.file), key, bg)
 	if err != nil {
 		return err
 	}
-	w.widgets[key.Index] = widget
+	ww.widgets[key.Index] = widget
 	return nil
 }
 
+func (ww *WindowWidgets) Matches(window ActiveWindow) bool {
+	resource := ww.resource.MatchString(window.resource)
+	title := ww.title.MatchString(window.title)
+	return resource && title
+}
+
 // loads a background image.
-func (d *Deck) loadBackground(dev *streamdeck.Device, bg string) error {
+func (deck *Deck) loadBackground(dev *streamdeck.Device, bg string) error {
 	f, err := os.Open(bg)
 	if err != nil {
 		return err
@@ -174,23 +181,57 @@ func (d *Deck) loadBackground(dev *streamdeck.Device, bg string) error {
 		return fmt.Errorf("supplied background image has wrong dimensions, expected %dx%d pixels", width, height)
 	}
 
-	d.Background = background
+	deck.background = background
 	return nil
 }
 
 // returns the background image for an individual key.
-func (d *Deck) backgroundForKey(dev *streamdeck.Device, key uint8) image.Image {
+func (deck *Deck) backgroundForKey(dev *streamdeck.Device, key uint8) image.Image {
 	padding := int(dev.Padding)
 	pixels := int(dev.Pixels)
 	bg := image.NewRGBA(image.Rect(0, 0, pixels, pixels))
 
-	if d.Background != nil {
-		startx := int(key%dev.Columns) * (pixels + padding)
-		starty := int(key/dev.Columns) * (pixels + padding)
-		draw.Draw(bg, bg.Bounds(), d.Background, image.Point{startx, starty}, draw.Src)
+	if deck.background != nil {
+		start := image.Point{
+			X: int(key%dev.Columns) * (pixels + padding),
+			Y: int(key/dev.Columns) * (pixels + padding),
+		}
+		draw.Draw(bg, bg.Bounds(), deck.background, start, draw.Src)
 	}
-
 	return bg
+}
+
+func (deck *Deck) WindowChanged(window ActiveWindow) {
+	verboseLog("windowChanged %s:%s %s", window.resource, window.title, window.id)
+	var match *WindowWidgets
+	for _, w := range deck.windows {
+		if w.Matches(window) {
+			match = &w
+		}
+	}
+	if match != nil {
+		for i, widget := range match.widgets {
+			deck.overrideWidget(i, widget)
+		}
+	} else {
+		for key := range deck.overrides {
+			deck.restoreWidget(key)
+		}
+	}
+}
+
+func (deck *Deck) overrideWidget(key uint8, widget Widget) {
+	deck.overrides[key] = &widget
+	if err := widget.Update(); err != nil {
+		fatal(err)
+	}
+}
+
+func (deck *Deck) restoreWidget(key uint8) {
+	delete(deck.overrides, key)
+	if err := deck.widgets[key].Update(); err != nil {
+		fatal(err)
+	}
 }
 
 // handles keypress with delay.
@@ -271,9 +312,34 @@ func executeCommand(cmd string) error {
 	return c.Process.Release()
 }
 
+func (deck *Deck) Widgets(yield func(Widget) bool) {
+	for i, w := range deck.widgets {
+		override := deck.overrides[i]
+		if override == nil {
+			if !yield(w) {
+				return
+			}
+		}
+	}
+	for i := range deck.overrides {
+		widget := deck.overrides[i]
+		if !yield(*widget) {
+			return
+		}
+	}
+}
+
+func (deck *Deck) widget(key uint8) Widget {
+	widget := deck.overrides[key]
+	if widget != nil {
+		return *widget
+	}
+	return deck.widgets[key]
+}
+
 // triggerAction triggers an action.
-func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
-	var w = d.Widgets[index]
+func (deck *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
+	w := deck.widget(index)
 	w.TriggerAction(hold)
 
 	var a *ActionConfig
@@ -287,7 +353,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 		return
 	}
 	if a.Deck != "" {
-		newDeck, err := LoadDeck(dev, filepath.Dir(d.File), a.Deck)
+		newDeck, err := LoadDeck(dev, filepath.Dir(deck.file), a.Deck)
 		if err != nil {
 			errorLog(err, "Failed to load deck %s", a.Deck)
 			return
@@ -320,7 +386,7 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 			}
 
 		case strings.HasPrefix(a.Device, "brightness"):
-			d.adjustBrightness(dev, strings.TrimPrefix(a.Device, "brightness"))
+			deck.adjustBrightness(dev, strings.TrimPrefix(a.Device, "brightness"))
 
 		default:
 			errorLogF("Unrecognized special action: %s", a.Device)
@@ -329,8 +395,8 @@ func (d *Deck) triggerAction(dev *streamdeck.Device, index uint8, hold bool) {
 }
 
 // updateWidgets updates/repaints all the widgets.
-func (d *Deck) updateWidgets() {
-	for _, w := range d.Widgets {
+func (deck *Deck) updateWidgets() {
+	for w := range deck.Widgets {
 		if !w.RequiresUpdate() {
 			continue
 		}
@@ -343,7 +409,7 @@ func (d *Deck) updateWidgets() {
 }
 
 // adjustBrightness adjusts the brightness.
-func (d *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
+func (deck *Deck) adjustBrightness(dev *streamdeck.Device, value string) {
 	if len(value) == 0 {
 		errorLogF("no brightness value specified")
 		return

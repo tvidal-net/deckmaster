@@ -147,7 +147,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 
 		case changeType := <-pa.Updates():
 			playback := changeType == SinkMuteChanged || changeType == SinkChanged
-			for _, widget := range deck.Widgets {
+			for widget := range deck.Widgets {
 				w, success := widget.(MuteChangedMonitor)
 				if success {
 					w.MuteChanged(playback)
@@ -161,7 +161,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 			}
 
 		case activeWindow := <-wch:
-			verboseLog("windowActivated: %v", activeWindow)
+			deck.WindowChanged(activeWindow)
 
 		case event := <-tch:
 			switch event := event.(type) {
@@ -178,7 +178,7 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 		case <-hup:
 			verboseLog("Received SIGHUP, reloading configuration...")
 
-			nd, e := LoadDeck(dev, ".", deck.File)
+			nd, e := LoadDeck(dev, ".", deck.file)
 			if e != nil {
 				errorLog(e, "invalid configuration")
 				continue
