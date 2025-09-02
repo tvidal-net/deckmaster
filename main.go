@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/godbus/dbus/v5"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/godbus/dbus/v5"
 
 	"github.com/bendahl/uinput"
 	"github.com/mitchellh/go-homedir"
@@ -159,8 +160,8 @@ func eventLoop(dev *streamdeck.Device, tch chan interface{}) error {
 				}
 			}
 
-		case windowClass := <-wch:
-			verboseLog("windowActivated: %s", windowClass)
+		case activeWindow := <-wch:
+			verboseLog("windowActivated: %v", activeWindow)
 
 		case event := <-tch:
 			switch event := event.(type) {

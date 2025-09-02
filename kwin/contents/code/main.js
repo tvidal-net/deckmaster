@@ -5,8 +5,9 @@ const method = "ActiveWindowChanged";
 function activeWindowChanged(window) {
     if (window) {
         const name = window.resourceName + "." + window.resourceClass;
+        const caption = window.caption;
         const id = window.internalId.toString();
-        callDBus(service, path, service, method, name, id);
+        callDBus(service, path, service, method, name, caption, id);
     }
 }
 

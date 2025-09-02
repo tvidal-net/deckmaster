@@ -18,17 +18,23 @@ const (
 	</interface>` + introspect.IntrospectDataString + "<node>"
 )
 
-type WindowChannel struct {
-	channel chan string
+type ActiveWindow struct {
+	resource string
+	title    string
+	id       string
 }
 
-func (w *WindowChannel) ActiveWindowChanged(class, id string) *dbus.Error {
-	w.channel <- class
+type WindowChannel struct {
+	channel chan ActiveWindow
+}
+
+func (w *WindowChannel) ActiveWindowChanged(class, title, id string) *dbus.Error {
+	w.channel <- ActiveWindow{class, title, id}
 	return nil
 }
 
-func MonitorActiveWindowChanged() <-chan string {
-	w := WindowChannel{make(chan string)}
+func MonitorActiveWindowChanged() <-chan ActiveWindow {
+	w := WindowChannel{make(chan ActiveWindow)}
 	cnn, _ := dbus.SessionBus()
 	_ = cnn.Export(&w, dbusMonitorPath, dbusInterface)
 
