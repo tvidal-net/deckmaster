@@ -22,10 +22,18 @@ var (
 	PATH   = strings.Split(os.Getenv("PATH"), ":")
 )
 
+type WindowWidgets struct {
+	resource regexp.Regexp
+	title    regexp.Regexp
+	widgets  map[uint8]Widget
+}
+
 // Deck is a set of widgets.
 type Deck struct {
 	File       string
 	Background image.Image
+	Windows    []WindowWidgets
+	Overrides  map[uint8]*Widget
 	Widgets    map[uint8]Widget
 }
 
@@ -62,11 +70,11 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 		File:    path,
 	}
 	if dc.Background != "" {
-		bgpath, err := expandPath(filepath.Dir(path), dc.Background)
+		bgPath, err := expandPath(filepath.Dir(path), dc.Background)
 		if err != nil {
 			return nil, err
 		}
-		if err := d.loadBackground(dev, bgpath); err != nil {
+		if err := d.loadBackground(dev, bgPath); err != nil {
 			return nil, err
 		}
 	}
@@ -92,7 +100,53 @@ func LoadDeck(dev *streamdeck.Device, base string, deck string) (*Deck, error) {
 		d.Widgets[i] = w
 	}
 
+	for _, w := range dc.Windows {
+		if e := d.addWindow(dev, &w); e != nil {
+			return nil, e
+		}
+	}
+
 	return &d, nil
+}
+
+func (d *Deck) addWindow(dev *streamdeck.Device, w *WindowConfig) error {
+	verboseLog("loading window overrides %s:%s", w.Resource, w.Title)
+
+	resource, err := regexp.Compile(w.Resource)
+	if err != nil {
+		errorLogF("failed to compile regex: %s", w.Resource)
+		return err
+	}
+
+	title, err := regexp.Compile(w.Title)
+	if err != nil {
+		errorLogF("failed to compile regex: %s", w.Title)
+		return err
+	}
+
+	window := WindowWidgets{
+		resource: *resource,
+		title:    *title,
+		widgets:  make(map[uint8]Widget),
+	}
+	for _, key := range w.Keys {
+		if e := window.addWidget(dev, d, key); e != nil {
+			errorLogF("failed to add widget %s:%s[%d]", w.Resource, w.Title, key.Index)
+			return e
+		}
+	}
+	d.Windows = append(d.Windows, window)
+	return nil
+}
+
+func (w *WindowWidgets) addWidget(dev *streamdeck.Device, deck *Deck, key KeyConfig) error {
+	bg := deck.backgroundForKey(dev, key.Index)
+	widget, err := NewWidget(dev, filepath.Dir(deck.File), key, bg)
+	if err != nil {
+		return err
+	}
+	w.widgets[key.Index] = widget
+	return nil
 }
 
 // loads a background image.
