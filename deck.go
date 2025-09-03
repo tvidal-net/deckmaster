@@ -203,17 +203,17 @@ func (deck *Deck) backgroundForKey(dev *streamdeck.Device, key uint8) image.Imag
 
 func (deck *Deck) WindowChanged(window ActiveWindow) {
 	verboseLog("windowChanged %s:%s %s", window.resource, window.title, window.id)
-	var match *WindowWidgets
+	var match = false
 	for _, w := range deck.windows {
 		if w.Matches(window) {
-			match = &w
+			verboseLog("windowMatch: %s:%s", w.resource, w.title)
+			for i, widget := range w.widgets {
+				deck.overrideWidget(i, widget)
+			}
+			match = true
 		}
 	}
-	if match != nil {
-		for i, widget := range match.widgets {
-			deck.overrideWidget(i, widget)
-		}
-	} else {
+	if !match {
 		for key := range deck.overrides {
 			deck.restoreWidget(key)
 		}
@@ -299,17 +299,12 @@ func executeCommand(cmd string) error {
 	args := SPACES.Split(cmd, -1)
 	exe := expandExecutable(args[0])
 
-	c := exec.Command(exe, args[1:]...) //nolint:gosec
-	if *verboseConfig {
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-	}
-
-	if e := c.Start(); e != nil {
+	command := exec.Command(exe, args[1:]...)
+	if err := command.Start(); err != nil {
 		errorLogF("failed to execute '%s %s'", exe, args[1:])
-		return e
+		return err
 	}
-	return c.Process.Release()
+	return command.Process.Release()
 }
 
 func (deck *Deck) Widgets(yield func(Widget) bool) {
