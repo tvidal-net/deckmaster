@@ -6,7 +6,6 @@ import (
 	"image/draw"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -35,21 +34,6 @@ type Deck struct {
 	windows    []WindowWidgets
 	overrides  map[uint8]*Widget
 	widgets    map[uint8]Widget
-}
-
-func expandExecutable(exe string) string {
-	for _, base := range PATH {
-		cmd := filepath.Join(base, exe)
-		s, e := os.Stat(cmd)
-		if e != nil || s.IsDir() {
-			continue
-		}
-		fileMode := s.Mode()
-		if fileMode&0111 != 0 {
-			return cmd
-		}
-	}
-	return exe
 }
 
 // LoadDeck loads a deck configuration.
@@ -292,19 +276,6 @@ func executeDBusMethod(config *DBusConfig) {
 	if e := CallDBus(config.Object, config.Path, config.Method, config.Value); e != nil {
 		errorLog(e, "DBus call failed %+v", config)
 	}
-}
-
-// executes a command.
-func executeCommand(cmd string) error {
-	args := SPACES.Split(cmd, -1)
-	exe := expandExecutable(args[0])
-
-	command := exec.Command(exe, args[1:]...)
-	if err := command.Start(); err != nil {
-		errorLogF("failed to execute '%s %s'", exe, args[1:])
-		return err
-	}
-	return command.Process.Release()
 }
 
 func (deck *Deck) Widgets(yield func(Widget) bool) {
