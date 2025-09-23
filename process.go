@@ -20,12 +20,13 @@ func runningCGroup() string {
 		panic(err)
 	}
 	split := strings.Split(string(s), ":")
-	return strings.TrimSpace(split[len(split)-1])
+	cgroup := split[len(split)-1]
+	return strings.TrimSpace(cgroup)
 }
 
 func createNewCGroup(name string) string {
-	current := runningCGroup()
-	cgroupPath := path.Join("/sys/fs/cgroup", filepath.Dir(current), name)
+	parent := filepath.Dir(runningCGroup())
+	cgroupPath := path.Join("/sys/fs/cgroup", parent, name)
 	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
 		errorLogF("Unable to create new cgroup for child processes\n\t", cgroupPath)
 		panic(err)

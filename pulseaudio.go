@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/tvidal-net/pulseaudio"
 	"strings"
 	"time"
+
+	"github.com/tvidal-net/pulseaudio"
 )
 
 const (
@@ -80,14 +81,14 @@ func NewPulseAudio() (*PulseAudio, error) {
 	return pulseAudio, nil
 }
 
-func (c *PulseAudio) Updates() <-chan ChangeType {
-	return c.updates
+func (pa *PulseAudio) Updates() <-chan ChangeType {
+	return pa.updates
 }
 
-func (c *PulseAudio) Start() {
+func (pa *PulseAudio) Start() {
 	var pulseAudioUpdates <-chan struct{}
 	for {
-		clientUpdates, e := c.client.Updates()
+		clientUpdates, e := pa.client.Updates()
 		if e != nil {
 			errorLog(e, "failed to subscribe to PulseAudio updates")
 			time.Sleep(time.Second)
@@ -98,100 +99,100 @@ func (c *PulseAudio) Start() {
 	}
 	for {
 		_ = <-pulseAudioUpdates
-		serverInfo, e := c.client.ServerInfo()
+		serverInfo, e := pa.client.ServerInfo()
 		if e != nil {
 			errorLog(e, "failed to get PulseAudio server info")
 			continue
 		}
 
-		defaultSink, e := getSink(serverInfo.DefaultSink, &c.client)
+		defaultSink, e := getSink(serverInfo.DefaultSink, &pa.client)
 		if e != nil {
 			errorLog(e, "failed to get PulseAudio sinks")
 			continue
 		}
-		if defaultSink.Name != c.CurrentSinkName() {
-			c.currentSink = *defaultSink
-			c.updates <- SinkChanged
+		if defaultSink.Name != pa.CurrentSinkName() {
+			pa.currentSink = *defaultSink
+			pa.updates <- SinkChanged
 		}
-		if defaultSink.Muted != c.currentSink.Muted {
-			c.currentSink = *defaultSink
-			c.updates <- SinkMuteChanged
+		if defaultSink.Muted != pa.currentSink.Muted {
+			pa.currentSink = *defaultSink
+			pa.updates <- SinkMuteChanged
 		}
 
-		defaultSource, e := getSource(serverInfo.DefaultSource, &c.client)
+		defaultSource, e := getSource(serverInfo.DefaultSource, &pa.client)
 		if e != nil {
 			errorLog(e, "failed to get PulseAudio sources")
 			continue
 		}
-		if defaultSource.Name != c.CurrentSourceName() {
-			c.currentSource = *defaultSource
-			c.updates <- SourceChanged
+		if defaultSource.Name != pa.CurrentSourceName() {
+			pa.currentSource = *defaultSource
+			pa.updates <- SourceChanged
 		}
-		if defaultSource.Muted != c.currentSource.Muted {
-			c.currentSource = *defaultSource
-			c.updates <- SourceMuteChanged
+		if defaultSource.Muted != pa.currentSource.Muted {
+			pa.currentSource = *defaultSource
+			pa.updates <- SourceMuteChanged
 		}
 	}
 }
 
-func (c *PulseAudio) Muted(isSinkStream bool) bool {
+func (pa *PulseAudio) Muted(isSinkStream bool) bool {
 	if isSinkStream {
-		return c.currentSink.Muted
+		return pa.currentSink.Muted
 	} else {
-		return c.currentSource.Muted
+		return pa.currentSource.Muted
 	}
 }
 
-func (c *PulseAudio) ToggleMute(isSinkStream bool) error {
+func (pa *PulseAudio) ToggleMute(isSinkStream bool) error {
 	if isSinkStream {
-		return c.client.SetSinkMute(!c.currentSink.Muted, c.CurrentSinkName())
+		return pa.client.SetSinkMute(!pa.currentSink.Muted, pa.CurrentSinkName())
 	} else {
-		return c.client.SetSourceMute(!c.currentSource.Muted, c.CurrentSourceName())
+		return pa.client.SetSourceMute(!pa.currentSource.Muted, pa.CurrentSourceName())
 	}
 }
 
-func (c *PulseAudio) CurrentSinkName() string {
-	return c.currentSink.Name
+func (pa *PulseAudio) CurrentSinkName() string {
+	return pa.currentSink.Name
 }
 
-func (c *PulseAudio) SetSink(partialName string) error {
-	verboseLog("currentSink: %s", c.CurrentSinkName())
-	sinks, err := c.client.Sinks()
+func (pa *PulseAudio) SetSink(partialName string) error {
+	verboseLog("currentSink: %s", pa.CurrentSinkName())
+	sinks, err := pa.client.Sinks()
 	if err != nil {
 		return err
 	}
 	for _, sink := range sinks {
 		sinkName := sink.Name
-		if sink.Name != c.CurrentSinkName() && strings.Contains(sinkName, partialName) {
+		if sink.Name != pa.CurrentSinkName() && strings.Contains(sinkName, partialName) {
 			verboseLog("setSink \"%s\"=%s", partialName, sinkName)
-			return c.client.SetDefaultSink(sinkName)
+			return pa.client.SetDefaultSink(sinkName)
 		}
 	}
 	return nil
 }
 
-func (c *PulseAudio) CurrentSourceName() string {
-	return c.currentSource.Name
+func (pa *PulseAudio) CurrentSourceName() string {
+	return pa.currentSource.Name
 }
 
-func (c *PulseAudio) SetSource(partialName string) error {
-	verboseLog("currentSource: %s", c.CurrentSourceName())
-	sources, err := c.client.Sources()
+func (pa *PulseAudio) SetSource(partialName string) error {
+	verboseLog("currentSource: %s", pa.CurrentSourceName())
+	sources, err := pa.client.Sources()
 	if err != nil {
 		return err
 	}
 	for _, source := range sources {
 		if source.MonitorSourceName == "" {
 			sourceName := source.Name
-			if source.Name != c.CurrentSourceName() && strings.Contains(sourceName, partialName) {
+			if source.Name != pa.CurrentSourceName() && strings.Contains(sourceName, partialName) {
 				verboseLog("setSource \"%s\"=%s", partialName, sourceName)
-				return c.client.SetDefaultSource(sourceName)
+				return pa.client.SetDefaultSource(sourceName)
 			}
 		}
 	}
 	return nil
 }
 
-func (c *PulseAudio) Close() {
-	c.client.Close()
+func (pa *PulseAudio) Close() {
+	pa.client.Close()
 }
