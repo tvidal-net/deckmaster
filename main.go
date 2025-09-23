@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"sync"
 	"syscall"
 	"time"
@@ -30,6 +31,8 @@ var (
 
 	keyboard uinput.Keyboard
 	shutdown = make(chan error)
+
+	invalidChars = regexp.MustCompile("[[:^graph:]]+")
 
 	pa            *PulseAudio
 	xorg          *Xorg
@@ -67,6 +70,10 @@ func verboseLog(format string, a ...interface{}) {
 	if *verboseConfig {
 		fmt.Printf(format+"\n", a...)
 	}
+}
+
+func strip(s string) string {
+	return invalidChars.ReplaceAllString(s, "")
 }
 
 func expandPath(base, path string) (string, error) {
@@ -254,7 +261,7 @@ func initDevice() (*streamdeck.Device, error) {
 		return &dev, err
 	}
 	verboseLog("Found device with serial %s (%d buttons, firmware %s)",
-		dev.Serial, dev.Keys, ver)
+		dev.Serial, dev.Keys, strip(ver))
 
 	if err := dev.Reset(); err != nil {
 		return &dev, err
