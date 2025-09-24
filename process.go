@@ -1,12 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
+)
+
+const (
+	DirMode           = 0755
+	FileMode          = 0644
+	cgroupProcsFile   = "cgroup.procs"
+	processCGroupFile = "/proc/self/cgroup"
+	baseCGroupPath    = "/sys/fs/cgroup"
 )
 
 var (
@@ -14,9 +22,9 @@ var (
 )
 
 func runningCGroup() string {
-	s, err := os.ReadFile("/proc/self/cgroup")
+	s, err := os.ReadFile(processCGroupFile)
 	if err != nil {
-		errorLogF("Unable to read the cgroup for the current process")
+		errorLogF("Unable to read the control group for the current process")
 		panic(err)
 	}
 	split := strings.Split(string(s), ":")
@@ -25,18 +33,20 @@ func runningCGroup() string {
 }
 
 func createNewCGroup(name string) string {
-	parent := filepath.Dir(runningCGroup())
-	cgroupPath := path.Join("/sys/fs/cgroup", parent, name)
-	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
-		errorLogF("Unable to create new cgroup for child processes\n\t", cgroupPath)
+	cgroupParent := filepath.Dir(runningCGroup())
+	cgroupPath := path.Join(baseCGroupPath, cgroupParent, name)
+	if err := os.MkdirAll(cgroupPath, DirMode); err != nil {
+		errorLogF("Unable to create new control group for child processes\n\t", cgroupPath)
 		panic(err)
 	}
+	verboseLog("Using control group to spawn child processes\n\t%s", cgroupPath)
 	return cgroupPath
 }
 
 func moveProcessToCGroup(pid int, cgroup string) error {
-	cgroupFile := path.Join(cgroup, "cgroup.procs")
-	return os.WriteFile(cgroupFile, []byte(strconv.Itoa(pid)), 0644)
+	cgroupFile := path.Join(cgroup, cgroupProcsFile)
+	fileContents := fmt.Sprintf("%d\n", pid)
+	return os.WriteFile(cgroupFile, []byte(fileContents), FileMode)
 }
 
 func expandExecutable(exe string) string {
